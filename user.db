@@ -1,0 +1,56 @@
+CREATE TABLE users (
+	user_id SERIAL UNIQUE,
+	user_name VARCHAR(50),
+	e_mail VARCHAR(50) PRIMARY KEY,
+	password VARCHAR(50)
+)
+;
+
+CREATE TABLE friends_list (
+	user_id1 INT REFERENCES users(user_id),
+	user_id2 INT REFERENCES users(user_id),
+	created_at TIMESTAMP,
+	id SERIAL PRIMARY KEY,relation VARCHAR(50) DEFAULT 'friends'
+)
+;
+
+CREATE TABLE sent_request (
+	user_id1 INT REFERENCES users(user_id),
+	user_id2 INT REFERENCES users(user_id),
+	id SERIAL PRIMARY KEY
+)                    
+;
+
+CREATE TABLE status (
+	id SERIAL PRIMARY KEY,
+	status_by INT REFERENCES users(user_id),
+	description VARCHAR(150),
+	created_at TIMESTAMP,
+	modified_at TIMESTAMP,
+	privacy VARCHAR(50),
+	image VARCHAR(50)
+);
+
+CREATE TABLE likes (
+	status_id INT REFERENCES status(id),
+	liked_by INT REFERENCES users(user_id),
+	id SERIAL PRIMARY KEY
+)                    
+;
+
+CREATE TABLE comments (
+	status_id INT REFERENCES status(id),
+	comment_by INT REFERENCES users(user_id),
+	comment VARCHAR(50),
+	id SERIAL PRIMARY KEY
+)
+;
+
+CREATE TABLE share (
+	shared_by INT REFERENCES users(user_id),
+	status_id INT REFERENCES status(id),
+	id SERIAL PRIMARY KEY
+)
+;
+
+
