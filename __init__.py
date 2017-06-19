@@ -124,50 +124,63 @@ def index():
     resp=make_response()
     resp.set_cookie('user','the username')
 
-@app.route('/note/User', methods=['GET', 'POST'])
+@app.route('cosmic/signup', methods=['GET', 'POST'])
 
 def signup():
-    session = ses()
-    username = request.args.get('user')
-    password = request.args.get('password')
-    oue = session.query(User).filter_by(username = username).first()
-    if oue == None :
-        id_user = User(username= username, password=password)
-        session.add(id_user)
-        session.commit()
-        return 'logged in'
-    else:
-        return 'user already exist'
+        session = ses()
+        username = request.args.get('username')
+        email   = request.args.get('email')
+        password = request.args.get('password')
+        checkuser = session.query(users).filter_by(user_name = username).first()
+        if checkuser == None :
+            adduser = users(user_name=username,e_mail=email,password=password)
+            session.add(adduser)
+            session.commit()
+            return 'welcome to cosmic'
+        else:
+            return 'user already exist'
 
-@app.route('/note/login',methods=['GET','POST'])
+
+
+@app.route('/cosmic/login',methods=['GET','POST'])
 def login():
-    
+
     session = ses()
     resp = make_response()
-    
 
-    username = request.args.get('user') 
+    email = request.args.get('email')
+    
     password = request.args.get('password')
-    print (username, password)
-    usercheck = session.query(User).filter_by(username = username).first()
-
-    resp.set_cookie('user',username) 
     
-    if usercheck == None:
-        return 'you are not costumer'
-    else:
-        if usercheck.password == password:
-            return resp
-        
-        else:
-            return 'password not currect'
+    print (username, password)
+    
+    logincheck = session.query(users).filter_by(e_mail = email).first()
 
-@app.route('/note/logout',methods =['GET'])
+
+
+    resp.set_cookie('username',user_name)
+
+    
+    if logincheck == None:
+    
+        return 'you are not accountant'
+        
+    else:
+    
+        if logincheck.password == password:
+        
+            return resp
+
+
+        else:
+            return 'password'
+@app.route('/cosmic/logout',methods =['GET'])
 def logout():
     resp = make_response()
-    resp.set_cookie('user' , expires = 0)
+    resp.set_cookie('username' , expires = 0)
     print "good bye"
     return resp
+
     
 
 if __name__ == '__main__':
