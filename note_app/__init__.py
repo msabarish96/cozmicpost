@@ -39,9 +39,9 @@ def ses():
     Session.configure(bind=con)
     session = Session()
     return session
-@app.route('/')
-def index():
-    request.cookies.get('user')
+
+
+
 class User(Base):
     __tablename__ = 'login'
 
@@ -67,7 +67,11 @@ class Group(Base):
 
 
 Base.metadata.create_all(con)
-
+@app.route('/')
+def index():
+    user = request.cookies.get('user')
+    resp=make_response()
+    resp.set_cookie('user','the username')
 
 @app.route('/note/User', methods=['GET', 'POST'])
 
@@ -97,6 +101,7 @@ def login():
     usercheck = session.query(User).filter_by(username = username).first()
 
     resp.set_cookie('user',username) 
+    
     if usercheck == None:
         return 'you are not costumer'
     else:
@@ -109,9 +114,10 @@ def login():
 @app.route('/note/logout',methods =['GET'])
 def logout():
     resp = make_response()
-    resp.set_cookie('user', expires = 0)
+    resp.set_cookie('user' , expires = 0)
+    print "good bye"
     return resp
-
+    
 
 if __name__ == '__main__':
 
