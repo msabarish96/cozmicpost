@@ -11,11 +11,11 @@ from sqlalchemy.ext.declarative import declarative_base
 from flask_sqlalchemy import SQLAlchemy
 import sys,os
 import requests
-from sqlalchemy import create_engine
-from sqlalchemy import Column, Date, Integer, String, DateTime
+from sqlalchemy import create_engine, Sequence
+from sqlalchemy import Column, Date, Integer, String, DateTime, VARCHAR, ForeignKey
 import json
 import uuid
-import groupcreate
+
 
 
 app = Flask(__name__)
@@ -53,8 +53,7 @@ class Users(Base):
     password = Column(VARCHAR(50))
 
     def __repr__(self):
-        return "<Users(username= '%s', password ='%s', user_id = '%s', e_mail = '%s' )>"
-			 %(self.user_name, self.password, self.user_id, self.e_mail)
+        return "<Users(username= '%s', password ='%s', user_id = '%s', e_mail = '%s' )>"%(self.user_name, self.password, self.user_id, self.e_mail)
 
 class Friends_list(Base):
     __tablename__ = 'friends_list'
@@ -62,7 +61,7 @@ class Friends_list(Base):
     id_seq = Sequence ('id_seq', metadata = Base.metadata)
     user_id1 = Column(Integer, ForeignKey("users.user_id"), nullable = False)
     user_id2 = Column(Integer, ForeignKey("users.user_id"), nullable = False)
-    created_at = Column(DateTime, default = datetime.datetime.uctnow)
+    created_at = Column(DateTime, default = datetime.datetime.utcnow)
     id = Column(Integer, id_seq, server_default = id_seq.next_value(), 
 		primary_key = True)
     relation = Column(VARCHAR(50), default = 'friends')
@@ -82,10 +81,10 @@ class Status(Base):
     id_seq = Sequence ('id_seq', metadata = Base.metadata)
     id = Column(Integer, id_seq, server_default = id_seq.next_value(), 
 		primary_key = True)
-    status_by = Column(Integer, ForeignKey("users.user_id"), nullabe = False)
+    status_by = Column(Integer, ForeignKey("users.user_id"), nullable = False)
     description = Column(VARCHAR(50), default = 'null')
-    created_at = Column(DateTime, default = datetime.datetime.uctnow)
-    modified_at = Column(dateTime, default = datetime.datetime.uctnow)
+    created_at = Column(DateTime, default = datetime.datetime.utcnow)
+    modified_at = Column(DateTime, default = datetime.datetime.utcnow)
     privacy = Column(VARCHAR(50), default = 'public')
     image = Column(VARCHAR(50), default = 'null')
 
@@ -96,7 +95,7 @@ class Likes(Base):
     status_id = Column(Integer, ForeignKey("status.id"), nullable = False)
     liked_by = Column(Integer, ForeignKey("users.user_id"), nullable = False)
     id = Column(Integer, id_seq, server_default = id_seq.next_value(),
-    		primarykey = True)
+    		primary_key = True)
     
 class Comments(Base):
     __tablename__ = 'comments'
@@ -106,7 +105,7 @@ class Comments(Base):
     comment_by = Column(Integer, ForeignKey("users.user_id"), nullable = False)
     comment = Column(VARCHAR(50))
     id = Column(Integer, id_seq, server_default = id_seq.next_value(),
-		primarykey = True)
+		primary_key = True)
 
 class Share(Base):
     __tablename__ = 'share'
@@ -115,7 +114,7 @@ class Share(Base):
     shared_by = Column(Integer, ForeignKey("users.user_id"), nullable = False)
     status_by = Column(Integer, ForeignKey("status.id"), nullable = False)
     id = Column(Integer, id_seq, server_default = id_seq.next_value(), 
-		primarykey = True)
+		primary_key = True)
 
 Base.metadata.create_all(con)
 @app.route('/')
@@ -124,60 +123,44 @@ def index():
     resp=make_response()
     resp.set_cookie('user','the username')
 
-@app.route('cosmic/signup', methods=['GET', 'POST'])
+@app.route('/cosmic/signup', methods=['GET', 'POST'])
 
 def signup():
-        session = ses()
-        username = request.args.get('username')
-        email   = request.args.get('email')
-        password = request.args.get('password')
-        checkuser = session.query(users).filter_by(user_name = username).first()
-        if checkuser == None :
-            adduser = users(user_name=username,e_mail=email,password=password)
-            session.add(adduser)
-            session.commit()
-            return 'welcome to cosmic'
-        else:
-            return 'user already exist'
+    session = ses()
+    username = request.args.get('username')
+    email   = request.args.get('email')
+    password = request.args.get('password')
+    checkuser = session.query(Users).filter_by(e_mail = email).first()
+    if checkuser == None :
+        adduser = Users(user_name=username,e_mail=email,password=password)
+        session.add(adduser)
+        session.commit()
+        return 'welcome to cosmic'
+    else:
+        return 'user already exist'
 
 
 
 @app.route('/cosmic/login',methods=['GET','POST'])
 def login():
-
     session = ses()
     resp = make_response()
-
     email = request.args.get('email')
-    
     password = request.args.get('password')
-    
-    print (username, password)
-    
-    logincheck = session.query(users).filter_by(e_mail = email).first()
-
-
-
-    resp.set_cookie('username',user_name)
-
+    logincheck = session.query(Users).filter_by(e_mail = email, password = password).first()
     
     if logincheck == None:
-    
         return 'you are not accountant'
-        
     else:
-    
-        if logincheck.password == password:
-        
-            return resp
+        print ("text")
+	session.commit()
+    	resp.set_cookie('email',value='email')
+	return resp
 
-
-        else:
-            return 'password'
 @app.route('/cosmic/logout',methods =['GET'])
 def logout():
     resp = make_response()
-    resp.set_cookie('username' , expires = 0)
+    resp.set_cookie('email' , expires = 0)
     print "good bye"
     return resp
 
