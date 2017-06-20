@@ -17,7 +17,6 @@ import json
 import uuid
 
 
-
 app = Flask(__name__)
 
 def connect(user, password, db, host ='localhost', port=5432):
@@ -116,6 +115,12 @@ class Share(Base):
     id = Column(Integer, id_seq, server_default = id_seq.next_value(), 
 		primary_key = True)
 
+class Cookies(Base):
+    __tablename__ = 'cookies'
+
+    user_id = Column(Integer, ForeignKey("users.user_id"), primary_key = True)
+    uuid = Column(VARCHAR(100), nullable = False, primary_key = True)
+
 Base.metadata.create_all(con)
 @app.route('/')
 def index():
@@ -148,19 +153,33 @@ def login():
     email = request.args.get('email')
     password = request.args.get('password')
     logincheck = session.query(Users).filter_by(e_mail = email, password = password).first()
-    
     if logincheck == None:
         return 'you are not accountant'
-    else:
-        print ("text")
-	session.commit()
-    	resp.set_cookie('email',value='email')
-	return resp
 
+
+    else :
+	cookiecheck = session.query(Cookies).filter_by(user_id = logincheck.user_id).first()
+  	if cookiecheck == None:
+        	print logincheck
+		u =str(uuid.uuid4())
+		adduuid = Cookies(user_id = logincheck.user_id, uuid = u)
+		session.add(adduuid)
+		session.commit()
+    		resp.set_cookie('uuid',value=u)
+		return resp
+    	else:
+		resp.set_cookie('uuid', value = cookiecheck.uuid)
+		print "user already logged in"
+		return resp
 @app.route('/cosmic/logout',methods =['GET'])
 def logout():
+    session = ses()
     resp = make_response()
-    resp.set_cookie('email' , expires = 0)
+    cookievalue = request.cookies.get('uuid')
+    deletecookie = session.query(Cookies).filter_by(uuid = cookievalue).first()
+    resp.set_cookie('uuid' , expires = 0)
+    session.delete(deletecookie)
+    session.commit()
     print "good bye"
     return resp
 
