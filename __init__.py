@@ -5,7 +5,7 @@ import datetime
 import random
 from sqlalchemy.orm import *
 from requests import Request, Session
-
+from marshmallow_sqlalchemy import ModelSchema, fields
 from sqlalchemy.ext.declarative import declarative_base
 
 from flask_sqlalchemy import SQLAlchemy
@@ -40,6 +40,13 @@ def ses():
     return session
 
 
+class Userinfo(ModelSchema):
+    class Meta:
+         fields = [
+             'username',
+	     'user_id',
+             'e_mail']
+
 
 class Users(Base):
     __tablename__ = 'users'
@@ -52,7 +59,7 @@ class Users(Base):
     password = Column(VARCHAR(50))
 
     def __repr__(self):
-        return "<Users(username= '%s', password ='%s', user_id = '%s', e_mail = '%s' )>"%(self.user_name, self.password, self.user_id, self.e_mail)
+        return "<Users(username: '%s', user_id: '%s', e_mail: '%s')> "%(self.user_name, self.user_id, self.e_mail)
 
 class Friends_list(Base):
     __tablename__ = 'friends_list'
@@ -121,6 +128,10 @@ class Cookies(Base):
     user_id = Column(Integer, ForeignKey("users.user_id"), primary_key = True)
     uuid = Column(VARCHAR(100), nullable = False, primary_key = True)
 
+    def __repr__(self):
+        return "<Cookies(user_id = '%s', uuid = '%s' )>"%(self.user_id, self.uuid)
+
+
 Base.metadata.create_all(con)
 @app.route('/')
 def index():
@@ -186,18 +197,75 @@ def list():
     #print friendlist2
 
     return resp
+@app.route('/cosmic/about',methods =['GET'])
+def about():
+    userprofile = []
+    session = ses()
+    cookievalue = request.cookies.get('uuid')
+    if cookievalue == None:
+	return "please login"
+    else:
+    	userid = session.query(Cookies).filter_by(uuid = cookievalue).first()
+    	userinfo = session.query(Users).filter_by(user_id = userid.user_id).first()
+    	print userinfo
+	userprofile.append(userinfo)
+	print userprofile
+	return {
+             'userinfo': Userinfo(
+                 many=True).dumps(userinfo).data
+                 }
+ 
+
+@app.route('/cosmic/sentrequest',methods = ['GET','POST'])
+def sentrequest():
+    session = ses()
+    cookievalue = request.cookies.get('uuid')
+    if cookievalue == None :
+	return "please login"
+    else :
+	userid = session.query(Cookies).filter_by(uuid = cookievalue).first()
+	req_email = request.args.get('sentto')
+	userinfo2 = session.query(Users).filter_by(e_mail = req_email).first()
+	if userinfo2 == None:
+		return "user not exist"
+	else:
+	  if userid.user_id == userinfo2.user_id:
+		return redirect(url_for('about'))
+	  else:
+		friendlist = session.query(Friends_list).filter_by(user_id1 = userid.user_id, user_id2 = userinfo2.user_id).first()
+		friendlist1 = session.query(Friends_list).filter_by(user_id1 = userinfo2.user_id, user_id2 = userid.user_id).first()
+		if friendlist == None and friendlist1 == None:
+			sentreq = session.query(Sent_request).filter_by(user_id1 = userid.user_id, user_id2 = userinfo2.user_id).first()
+			sentreq1 = session.query(Sent_request).filter_by(user_id1 = userinfo2.user_id, user_id2 = userid.user_id).first()
+			if sentreq == None and sentreq1 == None:
+				adduser = Sent_request(user_id1=userid.user_id,user_id2=userinfo2.user_id)
+        			session.add(adduser)
+	        		session.commit()
+				return "request sent"
+			else :
+				if sentreq == None:
+					return "request from his pending for Your acceptance"
+				else :
+					return "already you sent a request which is in pending"
+		else :
+			return "already you are friends"
+        
+>>>>>>> 73c0fd7933218605fd979c67935a0c4f22323f66
 
 @app.route('/cosmic/logout',methods =['GET'])
 def logout():
     session = ses()
     resp = make_response()
     cookievalue = request.cookies.get('uuid')
-    deletecookie = session.query(Cookies).filter_by(uuid = cookievalue).first()
-    resp.set_cookie('uuid' , expires = 0)
-    session.delete(deletecookie)
-    session.commit()
-    print "good bye"
-    return resp
+    if cookievalue == None :
+	return "you are not logged in for logout"
+    else:
+	    deletecookie = session.query(Cookies).filter_by(uuid = cookievalue).first()
+	    resp.set_cookie('uuid' , expires = 0)
+	    session.delete(deletecookie)
+	    session.commit()
+	    print "good bye"
+	    return resp
 
     
 
