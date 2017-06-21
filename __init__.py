@@ -189,6 +189,8 @@ def login():
 
 @app.route('/cosmic/friendlist',methods = ['GET','POST'])
 def list():
+    friendslistid = []
+    friendslistinfo = []
     session = ses()
     resp = make_response()
     uid = request.cookies.get('uuid')
@@ -204,12 +206,15 @@ def list():
 	if friendlist1 == None and friendlist == None:
 		return "no friends still"
 	else:
-		if freindlist1 == None:
-		 for user2 in friendlist2:
-			print user2.user_id1
-		elif friendlist2 == None:
-		 for user2 in friendlist1:
-			print user2.user_id2
+		for user2 in friendlist2:
+			 friendslistid.append(user2.user_id1)
+		for user3 in friendlist1:
+			 friendslistid.append(user3.user_id2)
+		print friendslistid
+		for n in friendslistid:
+			userinfo = session.query(Users).filter_by(user_id = n).first()
+			friendslistinfo.append(userinfo)
+		print "FRIENDS LIST",friendslistinfo
 	return resp
 
 @app.route('/cosmic/about',methods =['GET'])
