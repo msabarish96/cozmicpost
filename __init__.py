@@ -21,14 +21,14 @@ app = Flask(__name__)
 
 def connect(user, password, db, host ='localhost', port=5432):
     
-    url = 'postgresql://postgres:postgres@localhost:5432/cozmic'
+    url = 'postgresql://postgres:postgres@localhost:5432/cozmicpost'
     url = url.format(user,password,host,port,db)
     con = sqlalchemy.create_engine(url, client_encoding='utf8')
     meta = sqlalchemy.MetaData(bind=con, reflect=True)
     return con,meta
 
 
-con, meta = connect('postgres','postgres','cozmic','localhost','5432')
+con, meta = connect('postgres','postgres','cozmicpost','localhost','5432')
 Base = declarative_base()
 Base.metadata.create_all(con)
 
@@ -71,6 +71,9 @@ class Friends_list(Base):
     id = Column(Integer, id_seq, server_default = id_seq.next_value(), 
 		primary_key = True)
     relation = Column(VARCHAR(50), default = 'friends')
+    def __repr__(self):
+        return "<Friends_list(user_id1 = '%s', user_id2 = '%s' )>"%(self.user_id1, self.user_id2 )
+
 
 class Sent_request(Base):
     __tablename__ = 'sent_request'
@@ -189,14 +192,26 @@ def list():
     session = ses()
     resp = make_response()
     uid = request.cookies.get('uuid')
-    cookieuser = session.query(Cookies).filter_by(uuid = uid).one()
-    print cookieuser.user_id
-    friendlist1 = session.query(Friends_list).filter_by(user_id1 = cookieuser.user_id).all()
-    #friendlist2 = session.query(Friends_list).filter_by (user_id2 = cookieuser.user_id)
-    print friendlist1
-    #print friendlist2
+    if uuid == None :
+	return "please login"
+    else:
+	cookieuser = session.query(Cookies).filter_by(uuid = uid).one()
+	print cookieuser.user_id
+	friendlist1 = session.query(Friends_list).filter_by(user_id1 = cookieuser.user_id).all()
+	friendlist2 = session.query(Friends_list).filter_by(user_id2 = cookieuser.user_id).all()
+	print friendlist1
+	print friendlist2
+	if friendlist1 == None and friendlist == None:
+		return "no friends still"
+	else:
+		if freindlist1 == None:
+		 for user2 in friendlist2:
+			print user2.user_id1
+		elif friendlist2 == None:
+		 for user2 in friendlist1:
+			print user2.user_id2
+	return resp
 
-    return resp
 @app.route('/cosmic/about',methods =['GET'])
 def about():
     userprofile = []
@@ -250,7 +265,7 @@ def sentrequest():
 		else :
 			return "already you are friends"
         
->>>>>>> 73c0fd7933218605fd979c67935a0c4f22323f66
+
 
 @app.route('/cosmic/logout',methods =['GET'])
 def logout():
