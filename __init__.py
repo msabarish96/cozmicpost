@@ -297,7 +297,38 @@ def sentrequest():
 		else :
 			return "already you are friends"
         
-
+@app.route('/cosmic/confirm',methods = ['GET','POST'])
+def confirm():
+    session = ses()
+    cookievalue = request.cookies.get('uuid')
+    if cookievalue == None :
+	return "please login"
+    else :
+	userid = session.query(Cookies).filter_by(uuid = cookievalue).first()
+	accept_email = request.args.get('accept')
+	userinfo2 = session.query(Users).filter_by(e_mail = accept_email).first()
+	if userinfo2 == None:
+		return "user not exist"
+	else:
+	  if userid.user_id == userinfo2.user_id:
+		return redirect(url_for('about'))
+	  else:
+		friendlist = session.query(Friends_list).filter_by(user_id1 = userid.user_id, user_id2 = userinfo2.user_id).first()
+		friendlist1 = session.query(Friends_list).filter_by(user_id1 = userinfo2.user_id, user_id2 = userid.user_id).first()
+		if friendlist == None and friendlist1 == None:
+			sentreq1 = session.query(Sent_request).filter_by(user_id1 = userinfo2.user_id, user_id2 = userid.user_id).first()
+			if sentreq1 == None:
+				return "There is no friend request from this id"
+			else :
+				adduser = Friends_list(user_id1=userid.user_id,user_id2=userinfo2.user_id)
+				delsentrequest = session.query(Sent_request).filter_by(user_id1 = userinfo2.user_id, user_id2 = userid.user_id).first()
+        			session.add(adduser)
+				session.delete(delsentrequest)
+	        		session.commit()
+				return "request accepted"
+		else :
+			return "already you are friends"
+ 
 
 @app.route('/cosmic/logout',methods =['GET'])
 def logout():
