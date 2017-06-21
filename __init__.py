@@ -21,14 +21,14 @@ app = Flask(__name__)
 
 def connect(user, password, db, host ='localhost', port=5432):
     
-    url = 'postgresql://postgres:postgres@localhost:5432/cozmicpost'
+    url = 'postgresql://postgres:postgres@localhost:5432/cozmic'
     url = url.format(user,password,host,port,db)
     con = sqlalchemy.create_engine(url, client_encoding='utf8')
     meta = sqlalchemy.MetaData(bind=con, reflect=True)
     return con,meta
 
 
-con, meta = connect('postgres','postgres','cozmicpost','localhost','5432')
+con, meta = connect('postgres','postgres','cozmic','localhost','5432')
 Base = declarative_base()
 Base.metadata.create_all(con)
 
@@ -216,6 +216,33 @@ def list():
 			friendslistinfo.append(userinfo)
 		print "FRIENDS LIST",friendslistinfo
 	return resp
+@app.route('/cosmic/requestviews',methods = ['GET'])
+def views():
+    session = ses()
+    resp = make_response()
+    viewlist = []
+    sendviews = []
+    cookievalue = request.cookies.get('uuid')
+    if cookievalue == None:
+
+        return 'log in dude'
+    else:
+
+        checkuuid = session.query(Cookies).filter_by(uuid = cookievalue).first()
+        view = session.query(Sent_request).filter_by(user_id1 = checkuuid.user_id).all()
+        print view
+        if view == None:
+            return "no request"
+
+        else:
+            for person in view:
+                viewlist.append(person.user_id2)
+            print viewlist
+            for username in viewlist:
+                userinfo = session.query(Users).filter_by(user_id = username).first()
+                sendviews.append(userinfo)
+            print sendviews
+        return resp
 
 @app.route('/cosmic/about',methods =['GET'])
 def about():
