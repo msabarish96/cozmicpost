@@ -21,14 +21,14 @@ app = Flask(__name__)
 
 def connect(user, password, db, host ='localhost', port=5432):
     
-    url = 'postgresql://postgres:postgres@localhost:5432/cozmicpost'
+    url = 'postgresql://postgres:postgres@localhost:5432/cozmic'
     url = url.format(user,password,host,port,db)
     con = sqlalchemy.create_engine(url, client_encoding='utf8')
     meta = sqlalchemy.MetaData(bind=con, reflect=True)
     return con,meta
 
 
-con, meta = connect('postgres','postgres','cozmicpost','localhost','5432')
+con, meta = connect('postgres','postgres','cozmic','localhost','5432')
 Base = declarative_base()
 Base.metadata.create_all(con)
 
@@ -171,6 +171,22 @@ def login():
 		resp.set_cookie('uuid', value = cookiecheck.uuid)
 		print "user already logged in"
 		return resp
+
+
+@app.route('/cosmic/friendlist',methods = ['GET','POST'])
+def list():
+    session = ses()
+    resp = make_response()
+    uid = request.cookies.get('uuid')
+    cookieuser = session.query(Cookies).filter_by(uuid = uid).one()
+    print cookieuser.user_id
+    friendlist1 = session.query(Friends_list).filter_by(user_id1 = cookieuser.user_id).all()
+    #friendlist2 = session.query(Friends_list).filter_by (user_id2 = cookieuser.user_id)
+    print friendlist1
+    #print friendlist2
+
+    return resp
+
 @app.route('/cosmic/logout',methods =['GET'])
 def logout():
     session = ses()
