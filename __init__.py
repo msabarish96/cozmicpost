@@ -21,14 +21,14 @@ app = Flask(__name__)
 
 def connect(user, password, db, host ='localhost', port=5432):
     
-    url = 'postgresql://postgres:postgres@localhost:5432/cozmic'
+    url = 'postgresql://postgres:postgres@localhost:5432/cozmicpost'
     url = url.format(user,password,host,port,db)
     con = sqlalchemy.create_engine(url, client_encoding='utf8')
     meta = sqlalchemy.MetaData(bind=con, reflect=True)
     return con,meta
 
 
-con, meta = connect('postgres','postgres','cozmic','localhost','5432')
+con, meta = connect('postgres','postgres','cozmicpost','localhost','5432')
 Base = declarative_base()
 Base.metadata.create_all(con)
 
@@ -96,6 +96,10 @@ class Status(Base):
     modified_at = Column(DateTime, default = datetime.datetime.utcnow)
     privacy = Column(VARCHAR(50), default = 'public')
     image = Column(VARCHAR(50), default = 'null')
+
+    def __repr__(self):
+        return "<Status(id: '%s', status_by: '%s', description: '%s', created_at: '%s', modified_at: '%s', privacy: '%s', image: '%s')> "%(self.id, self.status_by, self.description, self.created_at, self.modified_at, self.privacy, self.image)
+
 
 class Likes(Base):
     __tablename__ = 'likes'
@@ -216,6 +220,8 @@ def list():
 			friendslistinfo.append(userinfo)
 		print "FRIENDS LIST",friendslistinfo
 	return resp
+
+
 @app.route('/cosmic/requestviews',methods = ['GET'])
 def views():
     session = ses()
@@ -224,16 +230,13 @@ def views():
     sendviews = []
     cookievalue = request.cookies.get('uuid')
     if cookievalue == None:
-
         return 'log in dude'
     else:
-
         checkuuid = session.query(Cookies).filter_by(uuid = cookievalue).first()
         view = session.query(Sent_request).filter_by(user_id1 = checkuuid.user_id).all()
         print view
         if view == None:
             return "no request"
-
         else:
             for person in view:
                 viewlist.append(person.user_id2)
@@ -244,6 +247,7 @@ def views():
             print sendviews
             return resp
 
+<<<<<<< HEAD
 @app.route('/cosmic/newsfeed', methods =['GET'])
 def newsfeed():
     session = ses()
@@ -270,6 +274,9 @@ def newsfeed():
                     news.append(newspost)
                 print news
     return resp    
+=======
+
+>>>>>>> 414e6eebde59fec99309bb4769ca1e8047605219
 @app.route('/cosmic/about',methods =['GET'])
 def about():
     userprofile = []
@@ -288,6 +295,7 @@ def about():
                  many=True).dumps(userinfo).data
                  }
  
+
 
 @app.route('/cosmic/sentrequest',methods = ['GET','POST'])
 def sentrequest():
@@ -322,6 +330,7 @@ def sentrequest():
 					return "already you sent a request which is in pending"
 		else :
 			return "already you are friends"
+
         
 @app.route('/cosmic/confirm',methods = ['GET','POST'])
 def confirm():
@@ -355,7 +364,79 @@ def confirm():
 		else :
 			return "already you are friends"
  
+@app.route('/cosmic/post/text',methods = ['GET','POST'])
+def text():
+    session = ses()
+    cookievalue = request.cookies.get('uuid')
+    if cookievalue == None :
+	return "please login"
+    else :
+	userid = session.query(Cookies).filter_by(uuid = cookievalue).first()
+	description = request.args.get('desc')
+	if description == None:
+		return "nothing to post"
+	else:
+		addstatus = Status(status_by = userid.user_id, description = description)
+        	session.add(addstatus)
+		session.commit()
+		return "succesfully post updated"
+		
+@app.route('/cosmic/post/image',methods = ['GET','POST'])
+def image():
+    session = ses()
+    cookievalue = request.cookies.get('uuid')
+    if cookievalue == None :
+	return "please login"
+    else :
+	userid = session.query(Cookies).filter_by(uuid = cookievalue).first()
+	imageurl = request.args.get('url')
+	if imageurl == None:
+		return "nothing to post"
+	else:
+		addimage = Status(status_by = userid.user_id, image = imageurl)
+	        session.add(addimage)
+		session.commit()
+		return "succesfully image uploaded"
 
+@app.route('/cosmic/post/modifytext',methods = ['GET','POST'])
+def modifytext():
+    session = ses()
+    cookievalue = request.cookies.get('uuid')
+    if cookievalue == None :
+	return "please login"
+    else :
+	userid = session.query(Cookies).filter_by(uuid = cookievalue).first()
+	description = request.args.get('modify')
+	statusid = request.args.get('postid')
+	if description == None:
+		return "nothing to post"
+	else:
+		modifystatus = session.query(Status).filter_by(id = statusid).first()
+		print modifystatus
+		modifystatus.description = description
+		modifystauts.modified_at = datetime.datetime.now
+		session.commit()
+		return "succesfully post modified"
+	
+@app.route('/cosmic/post/modifyimage',methods = ['GET','POST'])
+def modifyimage():
+    session = ses()
+    cookievalue = request.cookies.get('uuid')
+    if cookievalue == None :
+	return "please login"
+    else :
+	userid = session.query(Cookies).filter_by(uuid = cookievalue).first()
+	imageurl = request.args.get('modify')
+	statusid = request.args.get('postid')
+	if description == None:
+		return "nothing to post"
+	else:
+		modifyimage = session.query(Status).filter_by(id = statusid).first()
+		modifyimage.image = imageurl
+		modifyimage.modified_at = datetime.datetime.now
+		session.commit()
+		return "succesfully image modified"
+	
 @app.route('/cosmic/logout',methods =['GET'])
 def logout():
     session = ses()
