@@ -153,17 +153,19 @@ def signup():
     username = request.args.get('username')
     email   = request.args.get('email')
     password = request.args.get('password')
-    checkuser = session.query(Users).filter_by(e_mail = email).first()
-    if checkuser == None :
-        adduser = Users(user_name=username,e_mail=email,password=password)
-        session.add(adduser)
-        session.commit()
-        return 'welcome to cosmic'
+    uid = request.cookies.get('uuid')
+    if uuid == None:
+	    checkuser = session.query(Users).filter_by(e_mail = email).first()
+	    if checkuser == None :
+	        adduser = Users(user_name=username,e_mail=email,password=password)
+        	session.add(adduser)
+	        session.commit()
+        	return 'welcome to cosmic'
+	    else:
+        	return 'user already exist'
     else:
-        return 'user already exist'
-
-
-
+	return "already someone is logged in so just logout and try to sign up"
+       
 @app.route('/cosmic/login',methods=['GET','POST'])
 def login():
     session = ses()
@@ -171,26 +173,34 @@ def login():
     email = request.args.get('email')
     password = request.args.get('password')
     logincheck = session.query(Users).filter_by(e_mail = email, password = password).first()
-    if logincheck == None:
-        return 'you are not accountant'
+    uid = request.cookies.get('uuid')
+    cookiecheck = session.query(Cookies).filter_by(uuid = uid).first()
+    if uuid == None:
+	    if logincheck == None:
+        	return 'you are not accountant'
 
 
-    else :
-	cookiecheck = session.query(Cookies).filter_by(user_id = logincheck.user_id).first()
-  	if cookiecheck == None:
-        	print logincheck
-		u =str(uuid.uuid4())
-		adduuid = Cookies(user_id = logincheck.user_id, uuid = u)
-		session.add(adduuid)
-		session.commit()
-    		resp.set_cookie('uuid',value=u)
-		return resp
-    	else:
-		resp.set_cookie('uuid', value = cookiecheck.uuid)
-		print "user already logged in"
-		return resp
-
-
+	    else :
+	  	if cookiecheck == None:
+        		print logincheck
+			u =str(uuid.uuid4())
+			adduuid = Cookies(user_id = logincheck.user_id, uuid = u)
+			session.add(adduuid)
+			session.commit()
+	    		resp.set_cookie('uuid',value=u)
+			return resp
+	    	else:
+			resp.set_cookie('uuid', value = cookiecheck.uuid)
+			print "user already logged in"
+			return resp
+    elif logincheck == None:
+	return "already someone is logged in and just logout and try to log in"
+    elif logincheck.user_id == cookiecheck.user_id:
+	return "you are already logged in"
+    	
+    else:
+	return "already someone is logged in and just logout and try to log in"  
+     
 @app.route('/cosmic/friendlist',methods = ['GET','POST'])
 def list():
     friendslistid = []
@@ -447,7 +457,7 @@ def logout():
     else:
 	    deletecookie = session.query(Cookies).filter_by(uuid = cookievalue).first()
 	    resp.set_cookie('uuid' , expires = 0)
-	    cookie.delete(deletecookie)
+	    session.delete(deletecookie)
 	    session.commit()
 	    print "good bye"
 	    return resp
