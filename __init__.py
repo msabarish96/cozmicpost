@@ -67,7 +67,7 @@ class Friends_list(Base):
     id_seq = Sequence ('id_seq', metadata = Base.metadata)
     user_id1 = Column(Integer, ForeignKey("users.user_id"), nullable = False)
     user_id2 = Column(Integer, ForeignKey("users.user_id"), nullable = False)
-    created_at = Column(DateTime, default = datetime.datetime.utcnow)
+    created_at = Column(DateTime(timezone = True), default = datetime.datetime.utcnow)
     id = Column(Integer, id_seq, server_default = id_seq.next_value(), 
 		primary_key = True)
     relation = Column(VARCHAR(50), default = 'friends')
@@ -92,8 +92,8 @@ class Status(Base):
 		primary_key = True)
     status_by = Column(Integer, ForeignKey("users.user_id"), nullable = False)
     description = Column(VARCHAR(50), default = 'null')
-    created_at = Column(DateTime, default = datetime.datetime.utcnow)
-    modified_at = Column(DateTime, default = datetime.datetime.utcnow)
+    created_at = Column(DateTime(timezone = True), default = datetime.datetime.utcnow)
+    modified_at = Column(DateTime(timezone = True), default = datetime.datetime.utcnow, onupdate = datetime.datetime.utcnow)
     privacy = Column(VARCHAR(50), default = 'public')
     image = Column(VARCHAR(50), default = 'null')
 
@@ -247,7 +247,7 @@ def views():
             print sendviews
             return resp
 
-<<<<<<< HEAD
+
 @app.route('/cosmic/newsfeed', methods =['GET'])
 def newsfeed():
     session = ses()
@@ -274,9 +274,9 @@ def newsfeed():
                     news.append(newspost)
                 print news
     return resp    
-=======
 
->>>>>>> 414e6eebde59fec99309bb4769ca1e8047605219
+
+
 @app.route('/cosmic/about',methods =['GET'])
 def about():
     userprofile = []
@@ -414,7 +414,7 @@ def modifytext():
 		modifystatus = session.query(Status).filter_by(id = statusid).first()
 		print modifystatus
 		modifystatus.description = description
-		modifystauts.modified_at = datetime.datetime.now
+		#modifystatus.modified_at = datetime.datetime.now(timezone = True)
 		session.commit()
 		return "succesfully post modified"
 	
@@ -428,12 +428,12 @@ def modifyimage():
 	userid = session.query(Cookies).filter_by(uuid = cookievalue).first()
 	imageurl = request.args.get('modify')
 	statusid = request.args.get('postid')
-	if description == None:
+	if imageurl == None:
 		return "nothing to post"
 	else:
 		modifyimage = session.query(Status).filter_by(id = statusid).first()
 		modifyimage.image = imageurl
-		modifyimage.modified_at = datetime.datetime.now
+		#modifyimage.modified_at = datetime.datetime.now(timezone = True)
 		session.commit()
 		return "succesfully image modified"
 	
