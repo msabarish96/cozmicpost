@@ -194,7 +194,7 @@ def list():
     session = ses()
     resp = make_response()
     uid = request.cookies.get('uuid')
-    if uuid == None :
+    if uuid == None:
 	return "please login"
     else:
 	cookieuser = session.query(Cookies).filter_by(uuid = uid).one()
@@ -242,8 +242,34 @@ def views():
                 userinfo = session.query(Users).filter_by(user_id = username).first()
                 sendviews.append(userinfo)
             print sendviews
-        return resp
+            return resp
 
+@app.route('/cosmic/newsfeed', methods =['GET'])
+def newsfeed():
+    session = ses()
+    resp = make_response()
+    news = []
+    flist = []
+    cookievalue = request.cookies.get('uuid')
+    if cookievalue == None:
+        return 'log in'
+    else:
+        checkuser = session.query(Cookies).filter_by(uuid = cookievalue).one()
+        print checkuser.user_id
+        friendlist1 = session.query(Friends_list).filter_by(user_id1 = checkuser.user_id).all()
+        friendlist2 = session.query(Friends_list).filter_by(user_id2 = checkuser.user_id).all()
+        
+        for user1 in friendlist1:
+            flist.append(user1.user_id2)
+            for user2 in friendlist2:
+                flist.append(user2.user_id1)
+
+                for n in flist:
+                    
+                    newspost = session.query(Status).filter_by(status_by = n).first()
+                    news.append(newspost)
+                print news
+    return resp    
 @app.route('/cosmic/about',methods =['GET'])
 def about():
     userprofile = []
@@ -340,7 +366,7 @@ def logout():
     else:
 	    deletecookie = session.query(Cookies).filter_by(uuid = cookievalue).first()
 	    resp.set_cookie('uuid' , expires = 0)
-	    session.delete(deletecookie)
+	    cookie.delete(deletecookie)
 	    session.commit()
 	    print "good bye"
 	    return resp
