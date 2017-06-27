@@ -21,14 +21,14 @@ app = Flask(__name__)
 
 def connect(user, password, db, host ='localhost', port=5432):
     
-    url = 'postgresql://postgres:postgres@localhost:5432/cozmicpost'
+    url = 'postgresql://postgres:postgres@localhost:5432/cozmic'
     url = url.format(user,password,host,port,db)
     con = sqlalchemy.create_engine(url, client_encoding='utf8')
     meta = sqlalchemy.MetaData(bind=con, reflect=True)
     return con,meta
 
 
-con, meta = connect('postgres','postgres','cozmicpost','localhost','5432')
+con, meta = connect('postgres','postgres','cozmic','localhost','5432')
 Base = declarative_base()
 Base.metadata.create_all(con)
 
@@ -83,7 +83,10 @@ class Sent_request(Base):
     user_id2 = Column(Integer, ForeignKey("users.user_id"), nullable = False)
     id = Column(Integer, id_seq, server_default = id_seq.next_value(), 
 		primary_key = True)
-    
+    def __repr__(self):
+        return "<Sent_request(user_id1: '%s', user_id2: '%s')> "%(self.user_id1, self.user_id2)
+
+ 
 class Status(Base):
     __tablename__ = 'status'
 
@@ -96,7 +99,6 @@ class Status(Base):
     modified_at = Column(DateTime(timezone = True), default = datetime.datetime.utcnow, onupdate = datetime.datetime.utcnow)
     privacy = Column(VARCHAR(50), default = 'public')
     image = Column(VARCHAR(50), default = 'null')
-
     def __repr__(self):
         return "<Status(id: '%s', status_by: '%s', description: '%s', created_at: '%s', modified_at: '%s', privacy: '%s', image: '%s')> "%(self.id, self.status_by, self.description, self.created_at, self.modified_at, self.privacy, self.image)
 
@@ -109,7 +111,10 @@ class Likes(Base):
     liked_by = Column(Integer, ForeignKey("users.user_id"), nullable = False)
     id = Column(Integer, id_seq, server_default = id_seq.next_value(),
     		primary_key = True)
-    
+    def __repr__(self):
+        return "<Likes(status_id: '%s', liked_by: '%s')> "%(self.status_id, self.liked_by, self.e_mail)
+
+
 class Comments(Base):
     __tablename__ = 'comments'
 
@@ -119,6 +124,22 @@ class Comments(Base):
     comment = Column(VARCHAR(50))
     id = Column(Integer, id_seq, server_default = id_seq.next_value(),
 		primary_key = True)
+    def __repr__(self):
+        return "<Comments(status_id: '%s', comment_by: '%s', comment: '%s')> "%(self.status_id, self.comment_by, self.comment)
+
+
+class Tagging(Base):
+    __tablename__ = 'tagging'
+
+    id_seq = Sequence ('id_seq', metadata = Base.metadata)
+    status_id = Column(Integer, ForeignKey("status.id"), nullable = False)
+    tagged_by = Column(Integer, ForeignKey("users.user_id"), nullable = False)
+    tag_to = Column(Integer, ForeignKey("users.user_id"), nullable = False)
+    id = Column(Integer, id_seq, server_default = id_seq.next_value(),
+    		primary_key = True)
+    def __repr__(self):
+        return "<Tagging(status_id: '%s', tagged_by: '%s', tag_to: '%s', id: '%s')> "%(self.status_id, self.tagged_by, self.tag_to, self.id)
+
 
 class Share(Base):
     __tablename__ = 'share'
@@ -128,6 +149,9 @@ class Share(Base):
     status_by = Column(Integer, ForeignKey("status.id"), nullable = False)
     id = Column(Integer, id_seq, server_default = id_seq.next_value(), 
 		primary_key = True)
+    def __repr__(self):
+        return "<Share(shared_by: '%s', status_by: '%s', id: '%s')> "%(self.shared_by, self.status_by, self.id)
+
 
 class Cookies(Base):
     __tablename__ = 'cookies'
@@ -154,7 +178,7 @@ def signup():
     email   = request.args.get('email')
     password = request.args.get('password')
     uid = request.cookies.get('uuid')
-    if uuid == None:
+    if uid == None:
 	    checkuser = session.query(Users).filter_by(e_mail = email).first()
 	    if checkuser == None :
 	        adduser = Users(user_name=username,e_mail=email,password=password)
@@ -175,7 +199,7 @@ def login():
     logincheck = session.query(Users).filter_by(e_mail = email, password = password).first()
     uid = request.cookies.get('uuid')
     cookiecheck = session.query(Cookies).filter_by(uuid = uid).first()
-    if uuid == None:
+    if uid == None:
 	    if logincheck == None:
         	return 'you are not accountant'
 
@@ -423,10 +447,13 @@ def modifytext():
 	else:
 		modifystatus = session.query(Status).filter_by(id = statusid).first()
 		print modifystatus
-		modifystatus.description = description
-		#modifystatus.modified_at = datetime.datetime.now(timezone = True)
-		session.commit()
-		return "succesfully post modified"
+		if modifystatus.status_by == userid.user_id:
+			modifystatus.description = description
+			#modifystatus.modified_at = datetime.datetime.now(timezone = True)
+			session.commit()
+			return "succesfully post modified"
+		else:
+			return "you dont have permission to modify"
 	
 @app.route('/cosmic/post/modifyimage',methods = ['GET','POST'])
 def modifyimage():
@@ -446,7 +473,124 @@ def modifyimage():
 		#modifyimage.modified_at = datetime.datetime.now(timezone = True)
 		session.commit()
 		return "succesfully image modified"
-	
+
+
+@app.route('/cosmic/post/like', methods =['GET','POST'])
+def likes():
+    session = ses()
+    resp = make_response()
+    cookievalue = request.cookies.get('uuid')
+    if cookievalue == None:
+        return 'log in'
+    else:
+        checkuser = session.query(Cookies).filter_by(uuid = cookievalue).one()
+        print checkuser.user_id
+	statusid = request.args.get('postid')
+        postdetails = session.query(Status).filter_by(id = statusid).first()
+      	if postdetails == None:
+		return "the post id is wrong"
+	else:
+		likesdetails = session.query(Likes).filter_by(status_id = statusid, liked_by = checkuser.user_id).first()
+		if likesdetails == None:
+			addlikes = Likes(liked_by = checkuser.user_id, status_id = statusid)
+		        session.add(addlikes)
+			session.commit()
+			return "you like the post"
+		else:
+			removelikes = session.query(Likes).filter_by(status_id = statusid,liked_by = checkuser.user_id).first()
+			session.delete(removelikes)
+			session.commit()
+
+			return "likes removed from the post"
+
+@app.route('/cosmic/post/share', methods =['GET','POST'])
+def share():
+    session = ses()
+    resp = make_response()
+    cookievalue = request.cookies.get('uuid')
+    if cookievalue == None:
+        return 'log in'
+    else:
+        checkuser = session.query(Cookies).filter_by(uuid = cookievalue).one()
+        print checkuser.user_id
+	statusid = request.args.get('postid')
+        postdetails = session.query(Status).filter_by(id = statusid).first()
+      	if postdetails == None:
+		return "the post id is wrong"
+	else:
+		sharedetails = session.query(Share).filter_by(status_by = statusid, shared_by = checkuser.user_id).first()
+		if sharedetails == None:
+			if postdetails.status_by == checkuser.user_id:
+				return "Your post cannot be shared by Yourself"
+			else:
+				addshare = Share(status_by = statusid, shared_by = checkuser.user_id)
+			        session.add(addshare)
+				session.commit()
+				return "you shared the post"
+		else:
+			removeshare = session.query(Share).filter_by(status_by = statusid,shared_by = checkuser.user_id).first()
+			session.delete(removeshare)
+			session.commit()
+
+			return "Shared post is deleted"
+
+
+@app.route('/cosmic/post/tags', methods =['GET','POST'])
+def tagging():
+    session = ses()
+    resp = make_response()
+    cookievalue = request.cookies.get('uuid')
+    if cookievalue == None:
+        return 'log in'
+    else:
+        checkuser = session.query(Cookies).filter_by(uuid = cookievalue).first()
+        print checkuser.user_id
+	tagemail = request.args.get('email')
+	statusid = request.args.get('postid')
+        postdetails = session.query(Status).filter_by(id = statusid).first()
+      	tagidinfo = session.query(Users).filter_by(e_mail = tagemail).first()
+	if postdetails == None:
+		return "the post id is wrong"
+
+	else:
+	 if postdetails.status_by == checkuser.user_id:
+		if tagidinfo == None:
+			return "tagging friend not exist"
+		else:
+		 tagdetails = session.query(Tagging).filter_by(status_id = statusid, tag_to = tagidinfo.user_id).first()
+		 friendlist = session.query(Friends_list).filter_by(user_id1 = checkuser.user_id, user_id2 = tagidinfo.user_id).first()
+		 friendlist1 = session.query(Friends_list).filter_by(user_id1 = tagidinfo.user_id, user_id2 = checkuser.user_id).first()
+		 if friendlist1 == None and friendlist == None :
+			if checkuser.user_id == tagidinfo.user_id:
+				if tagidinfo.e_mail == tagemail:
+					return "self tagging is not available" 
+				elif tagdetails == None:
+					return "You are not tagged to this post"
+				else :
+					removetags = session.query(Tagging).filter_by(status_id= statusid, tag_to = tagidinfo.user_id)
+					session.delete(removetags)
+					session.commit()
+					return "You are successfully removed from post"
+			else:
+				return "Tagging friend is not Your friend"
+		 else:
+			if tagdetails == None:
+				addtags = Tagging(tagged_by = checkuser.user_id, status_id = statusid, tag_to = tagidinfo.user_id)
+			        session.add(addtags)
+				session.commit()
+				return "succesfully friend is tagged to post"
+			else:
+				
+				removetags = session.query(Tagging).filter_by(status_id = statusid,tag_to = tagidinfo.user_id).first()
+				session.delete(removetags)
+				session.commit()
+				return "succesfully Your friend is removed from the post"
+		
+	 else:
+		return "You are not have permission to tag in post"
+
+
+
 @app.route('/cosmic/logout',methods =['GET'])
 def logout():
     session = ses()
