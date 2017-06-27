@@ -533,7 +533,27 @@ def share():
 			session.commit()
 
 			return "Shared post is deleted"
+@app.route('/cosmic/post/comments', methods =['GET','POST'])
+def commentmethod():
 
+    session = ses()
+    resp = make_response()
+    cookievalue = request.cookies.get('uuid')
+    if cookievalue == None:
+        return 'login'
+    else:
+        checkuser = session.query(Cookies).filter_by(uuid = cookievalue).first()
+        comm = request.args.get('comm')
+        if comm == None:
+            return 'no comment still your opioin in your mind'
+
+        status_id = request.args.get('status_id')
+        comments = Comments(status_id = status_id, comment_by = checkuser.user_id, comment = comm )
+
+        session.add(comments)
+        session.commit()
+        return "commented"
+    return resp
 
 @app.route('/cosmic/post/tags', methods =['GET','POST'])
 def tagging():
