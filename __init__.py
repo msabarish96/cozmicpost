@@ -152,6 +152,47 @@ class Share(Base):
     def __repr__(self):
         return "<Share(shared_by: '%s', status_by: '%s', id: '%s')> "%(self.shared_by, self.status_by, self.id)
 
+class Groups(Base):
+    __tablename__ = 'groups'
+
+    id_seq = Sequence ('id_seq', metadata = Base.metadata)
+    group_id = Column(Integer, id_seq, 
+              server_default = id_seq.next_value(), unique = True)
+    group_name = Column(VARCHAR(50), primary_key = True)
+    admin = Column(Integer, ForeignKey("users.user_id"), nullable = False)
+   
+    def __repr__(self):
+        return "<Groups(group_name: '%s', group_id: '%s', admin: '%s')> "%(self.group_name, self.group_id, self.admin)
+
+class Groupsmembers(Base):
+    __tablename__ = 'groupsmembers'
+
+    id_seq = Sequence ('id_seq', metadata = Base.metadata)
+    id = Column(Integer, id_seq, 
+              server_default = id_seq.next_value(), unique = True, primary_key = True)
+    group_id = Column(Integer, ForeignKey("groups.group_id"), nullable = False)
+    member_id = Column(Integer, ForeignKey("users.user_id"), nullable = False)
+    accesstype = Column(VARCHAR(50), default = 'public')
+    def __repr__(self):
+        return "<Groupsmembers(group_id: '%s', member_id: '%s', accesstype: '%s')> "%(self.group_id, self.member_id, self.accesstype)
+
+class Grouppost(Base):
+    __tablename__ = 'grouppost'
+
+    id_seq = Sequence ('id_seq', metadata = Base.metadata)
+    id = Column(Integer, id_seq, server_default = id_seq.next_value(), 
+		primary_key = True)
+    group_id = Column(Integer, ForeignKey("groups.group_id"), nullable = False)
+    post_by = Column(Integer, ForeignKey("users.user_id"), nullable = False)
+    description = Column(VARCHAR(50), default = 'null')
+    created_at = Column(DateTime(timezone = True), default = datetime.datetime.utcnow)
+    modified_at = Column(DateTime(timezone = True), default = datetime.datetime.utcnow, onupdate = datetime.datetime.utcnow)
+    image = Column(VARCHAR(50), default = 'null')
+    def __repr__(self):
+        return "<Grouppost(id: '%s', group_id: '%s', post_by: '%s', description: '%s', created_at: '%s', modified_at: '%s', image: '%s')> "%(self.id, self.group_id, self.post_by, self.description, self.created_at, self.modified_at, self.image)
+
+
+
 
 class Cookies(Base):
     __tablename__ = 'cookies'
@@ -588,6 +629,240 @@ def tagging():
 		
 	 else:
 		return "You are not have permission to tag in post"
+
+@app.route('/cosmic/group',methods = ['GET','POST'])
+def group():
+    session = ses()
+    cookievalue = request.cookies.get('uuid')
+    if cookievalue == None :
+	return "please login"
+    else :
+	userid = session.query(Cookies).filter_by(uuid = cookievalue).first()
+	groupname = request.args.get('name')
+	if groupname == None:
+		return "enter group name"
+	else:
+		groupdetails = session.query(Groups).filter_by(group_name = groupname).first()
+		if groupdetails == None:
+			addgroup = Groups(group_name = groupname, admin = userid.user_id)
+        		session.add(addgroup)
+			session.commit()
+			return "Group succesfully created"
+		else:
+			if groupdetails.admin == userid.user_id:
+				groupinfodetails = session.query(Grouppost).filter_by(group_id = groupdetails.group_id).all()
+				for grouppost in groupinfodetails:
+					print grouppost
+				return "Group post is shown"
+			else:
+				memberrequest = Groupsmembers(group_id = groupdetails.group_id, member_id = userid.user_id)
+				session.add(memberrequest)
+				session.commit()
+				return "Member request is sent to Group"
+
+@app.route('/cosmic/groupdelete',methods = ['GET','POST'])
+def groupdelete():
+    session = ses()
+    cookievalue = request.cookies.get('uuid')
+    if cookievalue == None :
+	return "please login"
+    else :
+	userid = session.query(Cookies).filter_by(uuid = cookievalue).first()
+	groupname = request.args.get('name')
+	if groupname == None:
+		return "enter group name"
+	else:
+		groupdetails = session.query(Groups).filter_by(group_name = groupname).first()
+		print groupdetails
+		if groupdetails == None:
+			return "No group in this name as you admin"
+		else:
+			if groupdetails.admin == userid.user_id:
+				postdetails = session.query(Grouppost).filter_by(group_id = groupdetails.group_id).all()
+				groupmembers = session.query(Groupsmembers).filter_by(group_id = groupdetails.group_id).all()
+				for members in groupmembers:
+				 session.delete(members)
+				 session.commit()
+				for posts in postdetails:
+				 #print postdetails
+				 session.delete(posts)
+				 session.commit()
+				session.delete(groupdetails)
+				session.commit()
+				return "Group is deleted successfully"
+
+			else:
+				return "You dont have permission to delete"
+
+@app.route('/cosmic/group/remove',methods = ['GET','POST'])
+def removemembers():
+    session = ses()
+    cookievalue = request.cookies.get('uuid')
+    if cookievalue == None :
+	return "please login"
+    else :
+	userid = session.query(Cookies).filter_by(uuid = cookievalue).first()
+	membername = request.args.get('email')
+	groupname = request.args.get('groupname')
+	if membername == None:
+		return "enter member name"
+	elif groupname == None:
+		return "enter groupname"
+	else:
+		groupdetails = session.query(Groups).filter_by(group_name = groupname).first()
+		print groupdetails
+		if groupdetails == None:
+			return "No group in this name "
+		else:
+			memberdetails = session.query(Users).filter_by(e_mail = membername).first()
+			if memberdetails == None:
+				return "no user in the name in group"
+			else:
+				groupmemberdetails = session.query(Groupsmembers).filter_by(member_id = memberdetails.user_id, group_id = groupdetails.group_id).first()
+				if groupdetails.admin != userid.user_id and groupmemberdetails.member_id != userid.user_id:
+					return "you are not belong this group"
+				else:
+					postdetails = session.query(Grouppost).filter_by(group_id = groupdetails.group_id, post_by = memberdetails.user_id).all()
+					session.delete(groupmemberdetails)
+				 	for posts in postdetails:
+				 	#print postdetails
+				 	 session.delete(posts)
+				 	 session.commit()
+					session.commit()
+					return "Group member is removed successfully"
+
+			
+
+@app.route('/cosmic/addgroup',methods = ['GET','POST'])
+def addgroup():
+    session = ses()
+    cookievalue = request.cookies.get('uuid')
+    if cookievalue == None :
+	return "please login"
+    else :
+	userid = session.query(Cookies).filter_by(uuid = cookievalue).first()
+	groupname = request.args.get('name')
+	memberemail = request.args.get('email')
+	if groupname == None:
+		return "enter group name"
+	else:
+		memberdetails = session.query(Users).filter_by(e_mail = memberemail).first()
+		if memberdetails == None:
+			return "Member id is not found"
+		else:
+			groupdetails = session.query(Groups).filter_by(group_name = groupname, admin = userid.user_id).first()
+			if groupdetails == None:
+				return "No group is found"
+			else:
+				memberinfodetails = session.query(Groupsmembers).filter_by(group_id = groupdetails.group_id, member_id = memberdetails.user_id).first()
+				print memberinfodetails
+				if memberinfodetails == None:
+					addmember = Groupsmembers(group_id = groupdetails.group_id, member_id = memberdetails.user_id)
+					session.add(addmember)
+					session.commit()
+					return "member is successfully added to the group"
+				else:
+					groupmemberinfo = session.query(Groupsmembers).filter_by(group_id = groupdetails.group_id, member_id = memberdetails.user_id).first()
+					if groupmemberinfo.accesstype == 'public' :
+						memberinfodetails.accesstype = "member"
+						session.commit()
+						return "Member request for group is accepted"
+					else:
+						return "member is already in the Group"
+
+@app.route('/cosmic/group/post',methods = ['GET','POST'])
+def addpost():
+    session = ses()
+    cookievalue = request.cookies.get('uuid')
+    if cookievalue == None :
+	return "please login"
+    else :
+	userid = session.query(Cookies).filter_by(uuid = cookievalue).first()
+	groupname = request.args.get('name')
+	text = request.args.get('text')
+	image = request.args.get('image')
+	if groupname == None:
+		return "enter group name"
+	else:
+		groupdetails = session.query(Groups).filter_by(group_name = groupname).first()
+		if groupdetails == None:
+			return "No group is found"
+		else:
+			memberinfodetails = session.query(Groupsmembers).filter_by(group_id = groupdetails.group_id, member_id = userid.user_id, accesstype = 'member').first()
+			if memberinfodetails == None and groupdetails.admin != userid.user_id:
+				return "you dont have permission to post in group"
+			else:
+				if text == None:
+					addimage = Grouppost(group_id = groupdetails.group_id, post_by = userid.user_id, image = image)
+					session.add(addimage)
+					session.commit()
+					return "Image Url is posted to the group"
+				elif image == None:
+					addtext = Grouppost(group_id = groupdetails.group_id, post_by = userid.user_id, description = text)
+					session.add(addtext)
+					session.commit()
+					return "Text is posted to the group"
+				else :
+					return "nothing to post"
+
+@app.route('/cosmic/group/modifypost',methods = ['GET','POST'])
+def modifypost():
+    session = ses()
+    cookievalue = request.cookies.get('uuid')
+    if cookievalue == None :
+	return "please login"
+    else :
+	userid = session.query(Cookies).filter_by(uuid = cookievalue).first()
+	postid = request.args.get('postid')
+	text = request.args.get('text')
+	image = request.args.get('image')
+	if  postid == None:
+		return "enter post id"
+	else:
+		postdetails = session.query(Grouppost).filter_by(id = postid).first()
+		if postdetails == None:
+			return "No post is found"
+		else:
+			groupinfodetails = session.query(Groups).filter_by(group_id = postdetails.group_id).first()
+			if postdetails.post_by != userid.user_id and groupinfodetails.admin != userid.user_id:
+				return "you dont have permission to modify post in group"
+			else:
+				if text == None:
+					postdetails.image = image
+					session.commit()
+					return "Image Url is modified successfully"
+				elif image == None:
+					postdetails.description = text
+					session.commit()
+					return "Text is modified successfully"
+				else:
+					return "Nothing to modify"
+
+
+@app.route('/cosmic/group/deletepost',methods = ['GET','POST'])
+def deletepost():
+    session = ses()
+    cookievalue = request.cookies.get('uuid')
+    if cookievalue == None :
+	return "please login"
+    else :
+	userid = session.query(Cookies).filter_by(uuid = cookievalue).first()
+	postid = request.args.get('postid')
+	if  postid == None:
+		return "enter post id"
+	else:
+		postdetails = session.query(Grouppost).filter_by(id = postid).first()
+		if postdetails == None:
+			return "No post is found"
+		else:
+			groupinfodetails = session.query(Groups).filter_by(group_id = postdetails.group_id).first()
+			if postdetails.post_by != userid.user_id and groupinfodetails.admin != userid.user_id:
+				return "you dont have permission to delete post in group"
+			else:
+				session.delete(postdetails)
+				session.commit()
+				return "Post is deleted successfully"
+				
 
 
 
