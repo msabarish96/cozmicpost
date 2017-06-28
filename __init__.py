@@ -669,16 +669,24 @@ def group():
 			session.commit()
 			return "Group succesfully created"
 		else:
-			if groupdetails.admin == userid.user_id:
+			memberinfogroup = session.query(Groupsmembers).filter_by(group_id = groupdetails.group_id, member_id = userid.user_id).first()
+			if memberinfogroup == None:
+				memberrequest = Groupsmembers(group_id = groupdetails.group_id, member_id = userid.user_id)
+				session.add(memberrequest)
+				session.commit()
+				return "Member request is sent to Group"
+
+			elif groupdetails.admin == userid.user_id:
 				groupinfodetails = session.query(Grouppost).filter_by(group_id = groupdetails.group_id).all()
 				for grouppost in groupinfodetails:
 					print grouppost
 				return "Group post is shown"
 			else:
-				memberrequest = Groupsmembers(group_id = groupdetails.group_id, member_id = userid.user_id)
-				session.add(memberrequest)
-				session.commit()
-				return "Member request is sent to Group"
+				groupsinfodetails = session.query(Grouppost).filter_by(group_id = groupdetails.group_id).all
+				for grouppost in groupinfodetails:
+					print grouppost
+				return "Group post is shown"
+
 
 @app.route('/cosmic/groupdelete',methods = ['GET','POST'])
 def groupdelete():
@@ -739,8 +747,11 @@ def removemembers():
 				return "no user in the name in group"
 			else:
 				groupmemberdetails = session.query(Groupsmembers).filter_by(member_id = memberdetails.user_id, group_id = groupdetails.group_id).first()
+				print groupmemberdetails
 				if groupdetails.admin != userid.user_id and groupmemberdetails.member_id != userid.user_id:
 					return "you are not belong this group"
+				elif groupmemberdetails == None:
+					return "He is not a member of this group"
 				else:
 					postdetails = session.query(Grouppost).filter_by(group_id = groupdetails.group_id, post_by = memberdetails.user_id).all()
 					session.delete(groupmemberdetails)
@@ -776,14 +787,16 @@ def addgroup():
 			else:
 				memberinfodetails = session.query(Groupsmembers).filter_by(group_id = groupdetails.group_id, member_id = memberdetails.user_id).first()
 				print memberinfodetails
-				if memberinfodetails == None:
-					addmember = Groupsmembers(group_id = groupdetails.group_id, member_id = memberdetails.user_id)
+				if groupdetails.admin == memberdetails.user_id:
+					return "You are already admin to group"
+				elif memberinfodetails == None :
+					addmember = Groupsmembers(group_id = groupdetails.group_id, member_id = memberdetails.user_id, accesstype = 'member')
 					session.add(addmember)
 					session.commit()
 					return "member is successfully added to the group"
 				else:
 					groupmemberinfo = session.query(Groupsmembers).filter_by(group_id = groupdetails.group_id, member_id = memberdetails.user_id).first()
-					if groupmemberinfo.accesstype == 'public' :
+					if groupmemberinfo.accesstype == 'public' and groupmemberinfo.accesstype != 'member' :
 						memberinfodetails.accesstype = "member"
 						session.commit()
 						return "Member request for group is accepted"
@@ -824,6 +837,7 @@ def addpost():
 					return "Text is posted to the group"
 				else :
 					return "nothing to post"
+
 
 @app.route('/cosmic/group/modifypost',methods = ['GET','POST'])
 def modifypost():
