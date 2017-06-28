@@ -328,7 +328,11 @@ def newsfeed():
     session = ses()
     resp = make_response()
     news = []
+    newstag = []
     flist = []
+    glist = []
+    newsgroup = []
+    tlist = []
     cookievalue = request.cookies.get('uuid')
     if cookievalue == None:
         return 'log in'
@@ -337,7 +341,7 @@ def newsfeed():
         print checkuser.user_id
         friendlist1 = session.query(Friends_list).filter_by(user_id1 = checkuser.user_id).all()
         friendlist2 = session.query(Friends_list).filter_by(user_id2 = checkuser.user_id).all()
-        
+         
         for user1 in friendlist1:
             flist.append(user1.user_id2)
             for user2 in friendlist2:
@@ -347,7 +351,35 @@ def newsfeed():
                     
                     newspost = session.query(Status).filter_by(status_by = n).first()
                     news.append(newspost)
-                print news
+
+                print  news
+        # from tags
+
+        tagfilter = session.query(Tagging).filter_by(tag_to = checkuser.user_id).all()
+        for tags in tagfilter:
+           # tagsinfo = session.query(Status).filter_by(status_id = tags).all()
+            tlist.append(tagfilter.status_id)
+
+            for n in tlist:
+
+                newspost = session.query(Status).filter_by(status_id = n).all()
+                newstag.append(newspost)
+            print "news from tags"
+            print newstag
+        # from groups       
+        groupfilter1 = session.query(Groupsmembers).filter_by(member_id = checkuser.user_id).all()
+        groupfilter2 = session.query(Groups).filter_by(admin = checkuser.user_id).all()
+        for member in groupfilter1:
+            glist.append(member.group_id)
+            for admin in groupfilter2:
+                glist.append(admin.group_id)
+
+                for n in glist:
+                    newspot = session.query(Groups).filter_by(group_id = n).all()
+                    newsgroup.append(newspot)
+
+                print newsgroup
+     
     return resp    
 
 
