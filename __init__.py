@@ -331,6 +331,8 @@ def newsfeed():
     newstag = []
     flist = []
     glist = []
+    newsshare = []
+    slist = []
     newsgroup = []
     tlist = []
     cookievalue = request.cookies.get('uuid')
@@ -344,15 +346,15 @@ def newsfeed():
          
         for user1 in friendlist1:
             flist.append(user1.user_id2)
-            for user2 in friendlist2:
-                flist.append(user2.user_id1)
+        for user2 in friendlist2:
+            flist.append(user2.user_id1)
 
-                for n in flist:
+        for n in flist:
                     
-                    newspost = session.query(Status).filter_by(status_by = n).first()
-                    news.append(newspost)
+            newspost = session.query(Status).filter_by(status_by = n).first()
+            news.append(newspost)
 
-                print  news
+        print  news
         # from tags
 
         tagfilter = session.query(Tagging).filter_by(tag_to = checkuser.user_id).all()
@@ -371,15 +373,25 @@ def newsfeed():
         groupfilter2 = session.query(Groups).filter_by(admin = checkuser.user_id).all()
         for member in groupfilter1:
             glist.append(member.group_id)
-            for admin in groupfilter2:
-                glist.append(admin.group_id)
+        for admin in groupfilter2:
+            glist.append(admin.group_id)
+            print glist
+        for n in glist:
+            newspot = session.query(Grouppost).filter_by(group_id = n).all()
+            
+            
+            newsgroup.append(newspot)
 
-                for n in glist:
-                    newspot = session.query(Groups).filter_by(group_id = n).all()
-                    newsgroup.append(newspot)
-
-                print newsgroup
-     
+        print newsgroup
+        print glist
+        # from share
+        sharefilter = session.query(Share).filter_by(shared_by = checkuser.user_id).all()
+        for n in sharefilter:
+            slist.append(n.shared_by)
+        for n in slist:    
+            newspot = session.query(Status).filter_by(status_by = n).all()
+            newsshare.append(newspot)
+        print newsshare
     return resp    
 
 
