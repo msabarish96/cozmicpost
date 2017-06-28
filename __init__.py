@@ -225,7 +225,7 @@ def signup():
 	        adduser = Users(user_name=username,e_mail=email,password=password)
         	session.add(adduser)
 	        session.commit()
-        	return 'welcome to cosmic'
+        	return 'welcome to cosmic, login to continue'
 	    else:
         	return 'user already exist'
     else:
@@ -253,11 +253,12 @@ def login():
 			session.add(adduuid)
 			session.commit()
 	    		resp.set_cookie('uuid',value=u)
-			return resp
+			print "succesfully logged in" 
+			return resp 
 	    	else:
 			resp.set_cookie('uuid', value = cookiecheck.uuid)
 			print "user already logged in"
-			return resp
+			return resp 
     elif logincheck == None:
 	return "already someone is logged in and just logout and try to log in"
     elif logincheck.user_id == cookiecheck.user_id:
@@ -294,7 +295,7 @@ def list():
 			userinfo = session.query(Users).filter_by(user_id = n).first()
 			friendslistinfo.append(userinfo)
 		print "FRIENDS LIST",friendslistinfo
-	return resp
+		return  "Friendslist\n" + str(friendslistinfo)
 
 
 @app.route('/cosmic/requestviews',methods = ['GET'])
@@ -320,7 +321,7 @@ def views():
                 userinfo = session.query(Users).filter_by(user_id = username).first()
                 sendviews.append(userinfo)
             print sendviews
-            return resp
+            return "Pending request" + str(sendviews)
 
 
 @app.route('/cosmic/newsfeed', methods =['GET'])
@@ -397,10 +398,9 @@ def about():
     	print userinfo
 	userprofile.append(userinfo)
 	print userprofile
-	return {
-             'userinfo': Userinfo(
-                 many=True).dumps(userinfo).data
-                 }
+	sh = str(userprofile) 
+	message = 'about the user\n'
+	return message + userinfo.e_mail +  sh
  
 
 
@@ -486,7 +486,7 @@ def text():
 		addstatus = Status(status_by = userid.user_id, description = description)
         	session.add(addstatus)
 		session.commit()
-		return "succesfully post updated"
+		return "succesfully post updated" + str(addstatus)
 		
 @app.route('/cosmic/post/image',methods = ['GET','POST'])
 def image():
@@ -503,7 +503,7 @@ def image():
 		addimage = Status(status_by = userid.user_id, image = imageurl)
 	        session.add(addimage)
 		session.commit()
-		return "succesfully image uploaded"
+		return "succesfully image uploaded" + str(addimage)
 
 @app.route('/cosmic/post/modifytext',methods = ['GET','POST'])
 def modifytext():
@@ -524,7 +524,7 @@ def modifytext():
 			modifystatus.description = description
 			#modifystatus.modified_at = datetime.datetime.now(timezone = True)
 			session.commit()
-			return "succesfully post modified"
+			return "succesfully post modified" + str(modifystatus)
 		else:
 			return "you dont have permission to modify"
 	
@@ -545,7 +545,7 @@ def modifyimage():
 		modifyimage.image = imageurl
 		#modifyimage.modified_at = datetime.datetime.now(timezone = True)
 		session.commit()
-		return "succesfully image modified"
+		return "succesfully image modified" + str(modifyimage)
 
 
 @app.route('/cosmic/post/like', methods =['GET','POST'])
@@ -599,7 +599,7 @@ def share():
 				addshare = Share(status_by = statusid, shared_by = checkuser.user_id)
 			        session.add(addshare)
 				session.commit()
-				return "you shared the post"
+				return "you shared the post" 
 		else:
 			removeshare = session.query(Share).filter_by(status_by = statusid,shared_by = checkuser.user_id).first()
 			session.delete(removeshare)
@@ -671,7 +671,7 @@ def tagging():
 				addtags = Tagging(tagged_by = checkuser.user_id, status_id = statusid, tag_to = tagidinfo.user_id)
 			        session.add(addtags)
 				session.commit()
-				return "succesfully friend is tagged to post"
+				return "succesfully friend is tagged to post" + str(addtags)
 			else:
 				
 				removetags = session.query(Tagging).filter_by(status_id = statusid,tag_to = tagidinfo.user_id).first()
@@ -685,6 +685,7 @@ def tagging():
 @app.route('/cosmic/group',methods = ['GET','POST'])
 def group():
     session = ses()
+    groupinfodetails = []
     cookievalue = request.cookies.get('uuid')
     if cookievalue == None :
 	return "please login"
@@ -699,25 +700,28 @@ def group():
 			addgroup = Groups(group_name = groupname, admin = userid.user_id)
         		session.add(addgroup)
 			session.commit()
-			return "Group succesfully created"
+			return "Group succesfully created" + str(addgroup)
 		else:
 			memberinfogroup = session.query(Groupsmembers).filter_by(group_id = groupdetails.group_id, member_id = userid.user_id).first()
-			if memberinfogroup == None:
+			if groupdetails.admin == userid.user_id:
+				groupinfodetail = session.query(Grouppost).filter_by(group_id = groupdetails.group_id).all()
+				for grouppost in groupinfodetail:
+					groupinfodetails.append(grouppost)
+				print groupinfodetails
+				return "Group post is shown" + str(groupinfodetails)
+			elif memberinfogroup == None:
 				memberrequest = Groupsmembers(group_id = groupdetails.group_id, member_id = userid.user_id)
 				session.add(memberrequest)
 				session.commit()
 				return "Member request is sent to Group"
 
-			elif groupdetails.admin == userid.user_id:
-				groupinfodetails = session.query(Grouppost).filter_by(group_id = groupdetails.group_id).all()
-				for grouppost in groupinfodetails:
-					print grouppost
-				return "Group post is shown"
 			else:
 				groupsinfodetails = session.query(Grouppost).filter_by(group_id = groupdetails.group_id).all
-				for grouppost in groupinfodetails:
-					print grouppost
-				return "Group post is shown"
+				print groupsinfodetails
+				for groupost in groupsinfodetails:
+					groupinfodetails.append(groupost)
+				print groupinfodetails
+				return "Group post is shown" + str(groupinfodetails)
 
 
 @app.route('/cosmic/groupdelete',methods = ['GET','POST'])
