@@ -12,7 +12,7 @@ from flask_sqlalchemy import SQLAlchemy
 import sys,os
 import requests
 from sqlalchemy import create_engine, Sequence
-from sqlalchemy import Column, Date, Integer, String, DateTime, VARCHAR, ForeignKey
+from sqlalchemy import Column,LargeBinary, Date, Integer, String, DateTime, VARCHAR, ForeignKey
 import json
 import uuid
 
@@ -98,7 +98,7 @@ class Status(Base):
     created_at = Column(DateTime(timezone = True), default = datetime.datetime.utcnow)
     modified_at = Column(DateTime(timezone = True), default = datetime.datetime.utcnow, onupdate = datetime.datetime.utcnow)
     privacy = Column(VARCHAR(50), default = 'public')
-    image = Column(VARCHAR(50), default = 'null')
+    image = Column(LargeBinary(length=None), default = 'null')
     def __repr__(self):
         return "<Status(id: '%s', status_by: '%s', description: '%s', created_at: '%s', modified_at: '%s', privacy: '%s', image: '%s')> "%(self.id, self.status_by, self.description, self.created_at, self.modified_at, self.privacy, self.image)
 
@@ -326,7 +326,7 @@ def views():
 @app.route('/cosmic/newsfeed', methods =['GET'])
 def newsfeed():
     session = ses()
-    resp = make_response()
+    #resp = make_response()
     news = []
     newstag = []
     flist = []
@@ -392,7 +392,7 @@ def newsfeed():
             newspot = session.query(Status).filter_by(status_by = n).all()
             newsshare.append(newspot)
         print newsshare
-    return resp    
+    return json.dumps(newsshare)    
 
 
 
