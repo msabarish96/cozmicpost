@@ -331,7 +331,7 @@ def views():
 @app.route('/cosmic/newsfeed', methods =['GET'])
 def newsfeed():
     session = ses()
-    #resp = make_response()
+    resp = make_response()
     news = []
     newstag = []
     flist = []
