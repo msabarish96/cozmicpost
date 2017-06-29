@@ -1,4 +1,4 @@
-from flask import Flask ,url_for, Response, redirect, request,render_template,session,jsonify,make_response
+from flask import Flask ,url_for, Response, redirect, request,render_template,session,jsonify,make_response,json
 import sqlalchemy
 import Cookie
 import datetime
@@ -237,6 +237,7 @@ def login():
     resp = make_response()
     email = request.args.get('email')
     password = request.args.get('password')
+    username = request.args.get('username')
     logincheck = session.query(Users).filter_by(e_mail = email, password = password).first()
     uid = request.cookies.get('uuid')
     cookiecheck = session.query(Cookies).filter_by(uuid = uid).first()
@@ -363,12 +364,12 @@ def newsfeed():
            # tagsinfo = session.query(Status).filter_by(status_id = tags).all()
             tlist.append(tagfilter.status_id)
 
-            for n in tlist:
+        for n in tlist:
 
                 newspost = session.query(Status).filter_by(status_id = n).all()
                 newstag.append(newspost)
-            print "news from tags"
-            print newstag
+        print "news from tags"
+        print newstag
         # from groups       
         groupfilter1 = session.query(Groupsmembers).filter_by(member_id = checkuser.user_id).all()
         groupfilter2 = session.query(Groups).filter_by(admin = checkuser.user_id).all()
@@ -393,7 +394,7 @@ def newsfeed():
             newspot = session.query(Status).filter_by(status_by = n).all()
             newsshare.append(newspot)
         print newsshare
-    return json.dumps(newsshare)    
+    return resp  
 
 
 
@@ -629,15 +630,50 @@ def commentmethod():
     else:
         checkuser = session.query(Cookies).filter_by(uuid = cookievalue).first()
         comm = request.args.get('comm')
+        status_id = request.args.get('status_id')
+    
         if comm == None:
             return 'no comment still your opioin in your mind'
+        else:
+            commentdetail =  Comments(status_id = status_id, comment_by = checkuser.user_id, comment = comm )
 
-        status_id = request.args.get('status_id')
-        comments = Comments(status_id = status_id, comment_by = checkuser.user_id, comment = comm )
+            session.add(commentdetail)
+            session.commit()
+            return "commented"
+    return resp
+@app.route('/cosmic/post/removecomment')
+def removecomment():
+    session =ses()
+    resp = make_response()
+    cookievalue = request.cookies.get('uuid')
+    if cookievalue == None:
+        return 'please login this your valueble credintieal'
+    else:
+        checkuser = session.query(Cookies).filter_by(uuid = cookievalue).first()
+        removecomm = request.args.get('removecommid')
+        if removecomm == None:
+            return "please enter removed comment"
+        else:
+            checkcomment = session.query(Comments).filter_by(id = removecomm).first()
+            checkstatusowner = session.query(Status).filter_by(status_by = checkuser.user_id).first()
+            print checkcomment
+            print checkstatusowner
+            if checkuser.user_id == checkcomment.comment_by:
+                removedetails = session.query(Comments).filter_by(id = removecomm).first()
+                session.delete(removedetails)
+                session.commit()
 
-        session.add(comments)
-        session.commit()
-        return "commented"
+                return "delete by commented person"
+            elif checkuser.user_id == checkstatusowner.status_by:
+                removedetails = session.query(Comments).filter_by(id = removecomm).first()
+                session.delete(removedetails)
+                session.commit()
+                return "removed comment succefully"
+
+            else:
+                return "you can not delete this comment because your are not auth"
+
+
     return resp
 
 @app.route('/cosmic/post/tags', methods =['GET','POST'])
