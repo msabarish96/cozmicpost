@@ -45,7 +45,8 @@ class Userinfo(ModelSchema):
          fields = [
              'username',
 	     'user_id',
-             'e_mail']
+             'e_mail'
+		]
 
 
 class Users(Base):
@@ -59,7 +60,9 @@ class Users(Base):
     password = Column(VARCHAR(50))
 
     def __repr__(self):
-        return "<Users(username: '%s', user_id: '%s', e_mail: '%s')> "%(self.user_name, self.user_id, self.e_mail)
+        return "<Users('username:' %s, 'user_id:' '%s', 'e_mail:' '%s')> "%(self.user_name, self.user_id, self.e_mail)
+
+
 
 class Friends_list(Base):
     __tablename__ = 'friends_list'
@@ -189,7 +192,7 @@ class Grouppost(Base):
     modified_at = Column(DateTime(timezone = True), default = datetime.datetime.utcnow, onupdate = datetime.datetime.utcnow)
     image = Column(VARCHAR(50), default = 'null')
     def __repr__(self):
-        return "<Grouppost(id: '%s', group_id: '%s', post_by: '%s', description: '%s', created_at: '%s', modified_at: '%s', image: '%s')> "%(self.id, self.group_id, self.post_by, self.description, self.created_at, self.modified_at, self.image)
+        return "<Grouppost(id: '%s', group_id: '%s', post_by: '%s', description: '%s', created_at: '%s', modified_at: '%s', image: '%s')" %(self.id, self.group_id, self.post_by, self.description, self.created_at, self.modified_at, self.image)
 
 
 
@@ -414,7 +417,6 @@ def about():
 	sh = str(userprofile) 
 	message = 'about the user\n'
 	return message + userinfo.e_mail +  sh
- 
 
 
 @app.route('/cosmic/sentrequest',methods = ['GET','POST'])
@@ -832,7 +834,9 @@ def removemembers():
 			else:
 				groupmemberdetails = session.query(Groupsmembers).filter_by(member_id = memberdetails.user_id, group_id = groupdetails.group_id).first()
 				print groupmemberdetails
-				if groupdetails.admin != userid.user_id and groupmemberdetails.member_id != userid.user_id:
+				if groupdetails.admin == memberdetails.user_id:
+					return "you are the admin so you cannot remove yourself"
+				elif groupdetails.admin != userid.user_id and groupmemberdetails.member_id != userid.user_id:
 					return "you are not belong this group"
 				elif groupmemberdetails == None:
 					return "He is not a member of this group"
