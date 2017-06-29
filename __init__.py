@@ -340,6 +340,7 @@ def newsfeed():
     slist = []
     newsgroup = []
     tlist = []
+    clist = []
     cookievalue = request.cookies.get('uuid')
     if cookievalue == None:
         return 'log in'
@@ -357,8 +358,12 @@ def newsfeed():
         for n in flist:
                     
             newspost = session.query(Status).filter_by(status_by = n).first()
-            news.append(newspost)
-
+            print newspost
+            if newspost != None:
+                comm = session.query(Comments).filter_by(status_id = newspost.id).all()
+                news.append(newspost)
+            news.append(comm)
+            
         print  news
         # from tags
 
