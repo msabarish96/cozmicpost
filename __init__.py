@@ -485,7 +485,37 @@ def confirm():
 				return "request accepted"
 		else :
 			return "already you are friends"
- 
+         
+@app.route('/cosmic/unfriend',methods = ['GET','POST'])
+def unfriend():
+    session = ses()
+    cookievalue = request.cookies.get('uuid')
+    if cookievalue == None :
+	return "please login"
+    else :
+	userid = session.query(Cookies).filter_by(uuid = cookievalue).first()
+	email = request.args.get('email')
+	userinfo2 = session.query(Users).filter_by(e_mail = email).first()
+	if userinfo2 == None:
+		return "user not exist"
+	else:
+	  if userid.user_id == userinfo2.user_id:
+		return redirect(url_for('about'))
+	  else:
+		friendlist = session.query(Friends_list).filter_by(user_id1 = userid.user_id, user_id2 = userinfo2.user_id).first()
+		friendlist1 = session.query(Friends_list).filter_by(user_id1 = userinfo2.user_id, user_id2 = userid.user_id).first()
+		if friendlist == None and friendlist1 == None:
+			return "He is not a friend for you"
+		elif friendlist1 == None:
+			session.delete(friendlist)
+			session.commit()
+			return "You unfriend him"
+		else:
+			session.delete(friendlist1)
+			session.commit()
+			return "You unfriend him"
+
+
 @app.route('/cosmic/post/text',methods = ['GET','POST'])
 def text():
     session = ses()
@@ -557,10 +587,52 @@ def modifyimage():
 		return "nothing to post"
 	else:
 		modifyimage = session.query(Status).filter_by(id = statusid).first()
-		modifyimage.image = imageurl
-		#modifyimage.modified_at = datetime.datetime.now(timezone = True)
-		session.commit()
-		return "succesfully image modified" + str(modifyimage)
+		if modifyimage == None:
+			return "Post id is wrong"
+		else:
+			if modifyimage.status_by == userid.user_id:
+				modifyimage.image = imageurl
+				session.commit()
+				return "succesfully image modified" + str(modifyimage)
+			else:
+				return "You dont have permission to modify the post"
+
+@app.route('/cosmic/postdelete',methods = ['GET','POST'])
+def postdelete():
+    session = ses()
+    cookievalue = request.cookies.get('uuid')
+    if cookievalue == None :
+	return "please login"
+    else :
+	userid = session.query(Cookies).filter_by(uuid = cookievalue).first()
+	statusid = request.args.get('postid')
+	if statusid == None:
+		return "nothing to post"
+	else:
+		deletestatus = session.query(Status).filter_by(id = statusid).first()
+		if deletestatus == None:
+			return "Post id is wrong"
+		else:
+			if deletestatus.status_by == userid.user_id:
+				deletetags = session.query(Tagging).filter_by(status_id = statusid).all()
+				for deletetag in deletetags:
+					session.delete(deletetag)
+					session.commit()
+				deletelikes = session.query(Likes).filter_by(status_id = statusid).all()
+				for deletelike in deletelikes:
+					session.delete(deletelike)
+					session.commit()
+				deletecomments = session.query(Comments).filter_by(status_id = statusid).all()
+				for deletecomment in deletecomments:
+					session.delete(deletecomment)
+					session.commit()
+				session.delete(deletestatus)
+				session.commit()
+				return "succesfully post deleted" 
+			else :
+				return "you dont have permission to delete the post"
+
+
 
 
 @app.route('/cosmic/post/like', methods =['GET','POST'])
