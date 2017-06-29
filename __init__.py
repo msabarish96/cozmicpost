@@ -557,10 +557,40 @@ def modifyimage():
 		return "nothing to post"
 	else:
 		modifyimage = session.query(Status).filter_by(id = statusid).first()
-		modifyimage.image = imageurl
-		#modifyimage.modified_at = datetime.datetime.now(timezone = True)
-		session.commit()
-		return "succesfully image modified" + str(modifyimage)
+		if modifyimage == None:
+			return "Post id is wrong"
+		else:
+			if modifyimage.status_by == userid.user_id:
+				modifyimage.image = imageurl
+				session.commit()
+				return "succesfully image modified" + str(modifyimage)
+			else:
+				return "You dont have permission to modify the post"
+
+@app.route('/cosmic/postdelete',methods = ['GET','POST'])
+def postdelete():
+    session = ses()
+    cookievalue = request.cookies.get('uuid')
+    if cookievalue == None :
+	return "please login"
+    else :
+	userid = session.query(Cookies).filter_by(uuid = cookievalue).first()
+	statusid = request.args.get('postid')
+	if statusid == None:
+		return "nothing to post"
+	else:
+		deletestatus = session.query(Status).filter_by(id = statusid).first()
+		if deletestatus == None:
+			return "Post id is wrong"
+		else:
+			if deletestatus.status_by == userid.user_id:
+				session.delete(deletestatus)
+				session.commit()
+				return "succesfully post deleted" 
+			else :
+				return "you dont have permission to delete the post"
+
+
 
 
 @app.route('/cosmic/post/like', methods =['GET','POST'])
