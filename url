@@ -8,7 +8,8 @@ Timeline			:	http://127.0.0.1:8800/cosmic/newsfeed
 Friendlist			:	http://127.0.0.1:8800/cosmic/friendlist
 Send a request			:	http://127.0.0.1:8800/cosmic/sentrequest?sentto=kavi@gm.com
 confirm a request		:	http://127.0.0.1:8800/cosmic/confirm?accept=sabarish
-Pending a request 		:	http://127.0.0.1:8800/cosmic/requestviews
+Pending request 		:	http://127.0.0.1:8800/cosmic/requestviews
+Unfriend 			:	http://127.0.0.1:8800/cosmic/unfriend?email=sabarish
 
 about the person logged in	:	http://127.0.0.1:8800/cosmic/about
 
@@ -24,6 +25,7 @@ remove a friend from tag	:	http://127.0.0.1:8800/cosmic/post/tags?postid=61&emai
 share a post			:	http://127.0.0.1:8800/cosmic/post/share?postid=4
 like a post			:	http://127.0.0.1:8800/cosmic/post/like?postid=12
 comment a post			:	http://127.0.0.1:8800/cosmic/post/comments?comm=hi&status_id=4
+delete a post 			:	http://127.0.0.1:8800/cosmic/postdelete?postid=61
 
 Group creation			:	http://127.0.0.1:8800/cosmic/group?name=Hipbar
 group delete			:	http://127.0.0.1:8800/cosmic/groupdelete?name=Hipbar1

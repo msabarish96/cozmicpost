@@ -485,7 +485,37 @@ def confirm():
 				return "request accepted"
 		else :
 			return "already you are friends"
- 
+         
+@app.route('/cosmic/unfriend',methods = ['GET','POST'])
+def unfriend():
+    session = ses()
+    cookievalue = request.cookies.get('uuid')
+    if cookievalue == None :
+	return "please login"
+    else :
+	userid = session.query(Cookies).filter_by(uuid = cookievalue).first()
+	email = request.args.get('email')
+	userinfo2 = session.query(Users).filter_by(e_mail = email).first()
+	if userinfo2 == None:
+		return "user not exist"
+	else:
+	  if userid.user_id == userinfo2.user_id:
+		return redirect(url_for('about'))
+	  else:
+		friendlist = session.query(Friends_list).filter_by(user_id1 = userid.user_id, user_id2 = userinfo2.user_id).first()
+		friendlist1 = session.query(Friends_list).filter_by(user_id1 = userinfo2.user_id, user_id2 = userid.user_id).first()
+		if friendlist == None and friendlist1 == None:
+			return "He is not a friend for you"
+		elif friendlist1 == None:
+			session.delete(friendlist)
+			session.commit()
+			return "You unfriend him"
+		else:
+			session.delete(friendlist1)
+			session.commit()
+			return "You unfriend him"
+
+
 @app.route('/cosmic/post/text',methods = ['GET','POST'])
 def text():
     session = ses()
