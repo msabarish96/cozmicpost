@@ -396,7 +396,7 @@ def newsfeed():
         for n in slist:    
             newspot = session.query(Status).filter_by(status_by = n).all()
             newsshare.append(newspot)
-        print newsshare
+        json.dumps(newsshare)
     return resp  
 
 
