@@ -1,0 +1,41 @@
+
+Signup in cosmic		:	http://127.0.0.1:8800/cosmic/signup?username=arun&password=test&email=arun
+
+Log in to the cosmic		:	http://127.0.0.1:8800/cosmic/login?password=test&email=arun
+
+Timeline			:	http://127.0.0.1:8800/cosmic/newsfeed
+
+Friendlist			:	http://127.0.0.1:8800/cosmic/friendlist
+Send a request			:	http://127.0.0.1:8800/cosmic/sentrequest?sentto=kavi@gm.com
+confirm a request		:	http://127.0.0.1:8800/cosmic/confirm?accept=sabarish
+Pending a request 		:	http://127.0.0.1:8800/cosmic/requestviews
+
+about the person logged in	:	http://127.0.0.1:8800/cosmic/about
+
+post a text			:	http://127.0.0.1:8800/cosmic/post/text?desc=Goodafternoon
+modify a text			:	http://127.0.0.1:8800/cosmic/post/modifytext?modify=Goodafternoon&postid=60
+post a image			:	http://127.0.0.1:8800/cosmic/post/image?url=asdfghjkl
+modify a image			:	http://127.0.0.1:8800/cosmic/post/modifyimage?modify=Goodafter&postid=61
+
+tagging a friend to post	:	http://127.0.0.1:8800/cosmic/post/tags?postid=61&email=sabarish
+remove a tag from post		:	http://127.0.0.1:8800/cosmic/post/tags?postid=61&email=sabarish
+remove a friend from tag	:	http://127.0.0.1:8800/cosmic/post/tags?postid=61&email=sabarish
+
+share a post			:	http://127.0.0.1:8800/cosmic/post/share?postid=4
+like a post			:	http://127.0.0.1:8800/cosmic/post/like?postid=12
+comment a post			:	http://127.0.0.1:8800/cosmic/post/comments?comm=hi&status_id=4
+
+Group creation			:	http://127.0.0.1:8800/cosmic/group?name=Hipbar
+group delete			:	http://127.0.0.1:8800/cosmic/groupdelete?name=Hipbar1
+group add members		:	http://127.0.0.1:8800/cosmic/addgroup?name=Hipbar&email=arun
+group member removal		:	http://127.0.0.1:8800/cosmic/group/remove?email=harish&groupname=Hipbar1
+group sent a request		:	http://127.0.0.1:8800/cosmic/group?name=Hipbar
+
+view group post			:	http://127.0.0.1:8800/cosmic/group?name=Hipbar
+group post text			:	http://127.0.0.1:8800/cosmic/group/post?name=Hipbar2&text=Gooodevening
+group modify text		:	http://127.0.0.1:8800/cosmic/group/modifypost?postid=12&text=good
+group post image		:	http://127.0.0.1:8800/cosmic/group/post?name=Hipbar&image=Gooodevening
+group modify image		:	http://127.0.0.1:8800/cosmic/group/modifypost?postid=12&image=good
+group delete post		:	http://127.0.0.1:8800/cosmic/group/deletepost?postid=14
+
+Logout the cosmic		:	http://127.0.0.1:8800/cosmic/logout
