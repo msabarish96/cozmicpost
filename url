@@ -24,6 +24,7 @@ remove a friend from tag	:	http://127.0.0.1:8800/cosmic/post/tags?postid=61&emai
 
 share a post			:	http://127.0.0.1:8800/cosmic/post/share?postid=4
 like a post			:	http://127.0.0.1:8800/cosmic/post/like?postid=12
+remove like from post		:	http://127.0.0.1:8800/cosmic/post/like?postid=12
 comment a post			:	http://127.0.0.1:8800/cosmic/post/comments?comm=hi&status_id=4
 delete a post 			:	http://127.0.0.1:8800/cosmic/postdelete?postid=61
 

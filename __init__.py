@@ -614,6 +614,18 @@ def postdelete():
 			return "Post id is wrong"
 		else:
 			if deletestatus.status_by == userid.user_id:
+				deletetags = session.query(Tagging).filter_by(status_id = statusid).all()
+				for deletetag in deletetags:
+					session.delete(deletetag)
+					session.commit()
+				deletelikes = session.query(Likes).filter_by(status_id = statusid).all()
+				for deletelike in deletelikes:
+					session.delete(deletelike)
+					session.commit()
+				deletecomments = session.query(Comments).filter_by(status_id = statusid).all()
+				for deletecomment in deletecomments:
+					session.delete(deletecomment)
+					session.commit()
 				session.delete(deletestatus)
 				session.commit()
 				return "succesfully post deleted" 
