@@ -5,7 +5,8 @@ import datetime
 import random
 from sqlalchemy.orm import *
 from requests import Request, Session
-from marshmallow_sqlalchemy import ModelSchema, fields
+#from marshmallow_sqlalchemy import ModelSchema, fields
+from marshmallow import Schema, fields
 from sqlalchemy.ext.declarative import declarative_base
 
 from flask_sqlalchemy import SQLAlchemy
@@ -40,13 +41,13 @@ def ses():
     return session
 
 
-class Userinfo(ModelSchema):
+class Userinfo(Schema):
     class Meta:
-         fields = [
-             'username',
-	     'user_id',
-             'e_mail'
-		]
+        fields = [
+            'user_name',
+    	    'user_id',
+            'e_mail'
+	]
 
 
 class Users(Base):
@@ -59,10 +60,6 @@ class Users(Base):
     e_mail = Column(VARCHAR(50), primary_key = True)
     password = Column(VARCHAR(50))
 
-    def __repr__(self):
-        return "<Users('username:' %s, 'user_id:' '%s', 'e_mail:' '%s')> "%(self.user_name, self.user_id, self.e_mail)
-
-
 
 class Friends_list(Base):
     __tablename__ = 'friends_list'
@@ -74,9 +71,6 @@ class Friends_list(Base):
     id = Column(Integer, id_seq, server_default = id_seq.next_value(), 
 		primary_key = True)
     relation = Column(VARCHAR(50), default = 'friends')
-    def __repr__(self):
-        return "<Friends_list(user_id1 = '%s', user_id2 = '%s' )>"%(self.user_id1, self.user_id2 )
-
 
 class Sent_request(Base):
     __tablename__ = 'sent_request'
@@ -101,9 +95,20 @@ class Status(Base):
     created_at = Column(DateTime(timezone = True), default = datetime.datetime.utcnow)
     modified_at = Column(DateTime(timezone = True), default = datetime.datetime.utcnow, onupdate = datetime.datetime.utcnow)
     privacy = Column(VARCHAR(50), default = 'public')
-    image = Column(LargeBinary(length=None), default = 'null')
-    def __repr__(self):
-        return "<Status(id: '%s', status_by: '%s', description: '%s', created_at: '%s', modified_at: '%s', privacy: '%s', image: '%s')> "%(self.id, self.status_by, self.description, self.created_at, self.modified_at, self.privacy, self.image)
+    image = Column(VARCHAR(50), default = 'null')
+
+
+class Statusinfo(Schema):
+    class Meta:
+		fields = [
+		    'id',
+		    'status_by',
+		    'description',
+		    'created_at',
+		    'modified_at',
+		    'privacy',
+		    'image'
+		]
 
 
 class Likes(Base):
@@ -191,9 +196,18 @@ class Grouppost(Base):
     created_at = Column(DateTime(timezone = True), default = datetime.datetime.utcnow)
     modified_at = Column(DateTime(timezone = True), default = datetime.datetime.utcnow, onupdate = datetime.datetime.utcnow)
     image = Column(VARCHAR(50), default = 'null')
-    def __repr__(self):
-        return "<Grouppost(id: '%s', group_id: '%s', post_by: '%s', description: '%s', created_at: '%s', modified_at: '%s', image: '%s')" %(self.id, self.group_id, self.post_by, self.description, self.created_at, self.modified_at, self.image)
 
+class Grouppostinfo(Schema):
+    class Meta:
+        fields = [
+            'id',
+            'group_id',
+            'post_by',
+            'description',
+            'created_at',
+            'modified_at',
+            'image'
+        ]
 
 
 
@@ -299,8 +313,7 @@ def list():
 			userinfo = session.query(Users).filter_by(user_id = n).first()
 			friendslistinfo.append(userinfo)
 		print "FRIENDS LIST",friendslistinfo
-		return  "Friendslist\n" + str(friendslistinfo)
-
+		return Userinfo(many = True).dumps(friendslistinfo).data
 
 @app.route('/cosmic/requestviews',methods = ['GET'])
 def views():
@@ -324,8 +337,7 @@ def views():
             for username in viewlist:
                 userinfo = session.query(Users).filter_by(user_id = username).first()
                 sendviews.append(userinfo)
-            print sendviews
-            return "Pending request" + str(sendviews)
+            return Userinfo(many = True).dumps(sendviews).data
 
 
 @app.route('/cosmic/newsfeed', methods =['GET'])
@@ -362,7 +374,7 @@ def newsfeed():
             if newspost != None:
                 comm = session.query(Comments).filter_by(status_id = newspost.id).all()
                 news.append(newspost)
-            news.append(comm)
+                news.append(comm)
             
         print  news
         # from tags
@@ -402,7 +414,8 @@ def newsfeed():
             newspot = session.query(Status).filter_by(status_by = n).all()
             newsshare.append(newspot)
         print newsshare
-    return resp  
+        return jsonify({'groupost': Grouppostinfo(many = True).dumps(newspot).data,
+                'status': Statusinfo(many = True).dumps(news).data})
 
 
 
@@ -415,13 +428,17 @@ def about():
 	return "please login"
     else:
     	userid = session.query(Cookies).filter_by(uuid = cookievalue).first()
-    	userinfo = session.query(Users).filter_by(user_id = userid.user_id).first()
-    	print userinfo
+    	userinfo = session.query(Users).filter_by(user_id = userid.user_id).one()
+    	#print(userinfo.__dict__)
+
+	"""
 	userprofile.append(userinfo)
 	print userprofile
 	sh = str(userprofile) 
 	message = 'about the user\n'
-	return message + userinfo.e_mail +  sh
+	"""
+	return Userinfo().dumps(userinfo).data
+#	return message + userinfo.e_mail +  sh
 
 
 @app.route('/cosmic/sentrequest',methods = ['GET','POST'])
@@ -535,8 +552,16 @@ def text():
 	else:
 		addstatus = Status(status_by = userid.user_id, description = description)
         	session.add(addstatus)
+	
+		print addstatus.__dict__
 		session.commit()
-		return "succesfully post updated" + str(addstatus)
+		print addstatus.__dict__
+		return {
+		'succesfully post updated' : True,
+		'Status' : Statusinfo().dumps(addstatus).data
+		}
+		
+		#return  "successfully posted\n" + Statusinfo().dumps(addstatus).data 
 		
 @app.route('/cosmic/post/image',methods = ['GET','POST'])
 def image():
