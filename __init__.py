@@ -556,10 +556,10 @@ def text():
 		print addstatus.__dict__
 		session.commit()
 		print addstatus.__dict__
-		return {
+		return jsonify({
 		'succesfully post updated' : True,
 		'Status' : Statusinfo().dumps(addstatus).data
-		}
+		})
 		
 		#return  "successfully posted\n" + Statusinfo().dumps(addstatus).data 
 		
@@ -578,7 +578,11 @@ def image():
 		addimage = Status(status_by = userid.user_id, image = imageurl)
 	        session.add(addimage)
 		session.commit()
-		return "succesfully image uploaded" + str(addimage)
+		return jsonify({
+		'succesfully post updated' : True,
+		'Status' : Statusinfo().dumps(addimage).data
+		})
+        #return "succesfully image uploaded" + str(addimage)
 
 @app.route('/cosmic/post/modifytext',methods = ['GET','POST'])
 def modifytext():
@@ -599,7 +603,11 @@ def modifytext():
 			modifystatus.description = description
 			#modifystatus.modified_at = datetime.datetime.now(timezone = True)
 			session.commit()
-			return "succesfully post modified" + str(modifystatus)
+			return jsonify({
+		    'succesfully post updated' : True,
+		    'Status' : Statusinfo().dumps(modifystatus)
+		    })
+            #rreturn "succesfully post modified" + str(modifystatus)
 		else:
 			return "you dont have permission to modify"
 	
@@ -623,7 +631,11 @@ def modifyimage():
 			if modifyimage.status_by == userid.user_id:
 				modifyimage.image = imageurl
 				session.commit()
-				return "succesfully image modified" + str(modifyimage)
+				return jsonify({
+		        'succesfully post updated' : True,
+		        'Status' : Statusinfo().dumps(modifyimage).data
+		        })
+                #rreturn "succesfully image modified" + str(modifyimage)
 			else:
 				return "You dont have permission to modify the post"
 
@@ -840,7 +852,7 @@ def group():
     groupinfodetails = []
     cookievalue = request.cookies.get('uuid')
     if cookievalue == None :
-	return "please login"
+	    return "please login"
     else :
 	userid = session.query(Cookies).filter_by(uuid = cookievalue).first()
 	groupname = request.args.get('name')
@@ -852,7 +864,7 @@ def group():
 			addgroup = Groups(group_name = groupname, admin = userid.user_id)
         		session.add(addgroup)
 			session.commit()
-			return "Group succesfully created" + str(addgroup)
+			return "Group succesfully created"
 		else:
 			memberinfogroup = session.query(Groupsmembers).filter_by(group_id = groupdetails.group_id, member_id = userid.user_id).first()
 			if groupdetails.admin == userid.user_id:
@@ -860,20 +872,19 @@ def group():
 				for grouppost in groupinfodetail:
 					groupinfodetails.append(grouppost)
 				print groupinfodetails
-				return "Group post is shown" + str(groupinfodetails)
+				return "Group post is shown" 
 			elif memberinfogroup == None:
 				memberrequest = Groupsmembers(group_id = groupdetails.group_id, member_id = userid.user_id)
 				session.add(memberrequest)
 				session.commit()
 				return "Member request is sent to Group"
-
 			else:
 				groupsinfodetails = session.query(Grouppost).filter_by(group_id = groupdetails.group_id).all
 				print groupsinfodetails
 				for groupost in groupsinfodetails:
 					groupinfodetails.append(groupost)
 				print groupinfodetails
-				return "Group post is shown" + str(groupinfodetails)
+				return "Group post is shown" 
 
 
 @app.route('/cosmic/groupdelete',methods = ['GET','POST'])
